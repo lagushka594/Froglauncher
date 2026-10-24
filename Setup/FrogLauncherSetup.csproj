@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>FrogLauncher-Setup</AssemblyName>
+    <RootNamespace>FrogLauncherSetup</RootNamespace>
+    <ApplicationIcon>Assets\setup.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>FrogLauncher Setup</Product>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\*.png" />
+    <!-- сам лаунчер вшивается в установщик (build.bat кладёт его в Payload\) -->
+    <EmbeddedResource Include="Payload\FrogLauncher.exe" LogicalName="Payload.FrogLauncher.exe" Condition="Exists('Payload\FrogLauncher.exe')" />
+    <!-- общий код с лаунчером: создание ярлыков -->
+    <Compile Include="..\Core\Shortcut.cs" Link="Shortcut.cs" />
+  </ItemGroup>
+
+</Project>
