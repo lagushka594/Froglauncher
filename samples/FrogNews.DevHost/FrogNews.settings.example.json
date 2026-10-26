@@ -1,0 +1,6 @@
+﻿{
+  "ApiBaseUrl": "https://api.froglauncher.example/",
+  "LocalStaff": [
+    { "Login": "ваш_логин", "Role": "superadmin", "PasswordHash": "pbkdf2-sha256$200000$СОЛЬ$ХЭШ" }
+  ]
+}

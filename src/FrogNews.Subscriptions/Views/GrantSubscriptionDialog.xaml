@@ -1,0 +1,36 @@
+<Window x:Class="FrogNews.Subscriptions.Views.GrantSubscriptionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Выдать подписку" Width="480" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" Background="#0F172A" FontFamily="Segoe UI" FontSize="14"
+        FocusManager.FocusedElement="{Binding ElementName=ReasonBox}">
+    <Window.Resources>
+        <ResourceDictionary Source="pack://application:,,,/FrogNews.Subscriptions;component/Views/Styles.xaml" />
+    </Window.Resources>
+    <StackPanel Margin="20">
+        <TextBlock Foreground="White" FontSize="18" FontWeight="Bold">
+            <Run Text="Выдать подписку " /><Run Text="{Binding Nick, Mode=OneWay}" />
+        </TextBlock>
+        <TextBlock Foreground="#94A3B8" TextWrapping="Wrap" Margin="0,6,0,0"
+                   Text="Используйте после подтверждения оплаты в тикете Discord. Выдача попадёт в аудит и историю платежей пользователя." />
+
+        <TextBlock Text="Тариф" Foreground="#94A3B8" Margin="0,14,0,4" />
+        <ComboBox ItemsSource="{Binding Tiers}" SelectedItem="{Binding SelectedTier}" DisplayMemberPath="Name" FontSize="14" Padding="8,6" />
+
+        <TextBlock Text="Срок" Foreground="#94A3B8" Margin="0,12,0,4" />
+        <StackPanel Orientation="Horizontal">
+            <RadioButton Content="Месяц" GroupName="period" IsChecked="True" Foreground="White" Margin="0,0,18,0" />
+            <RadioButton Content="Год" GroupName="period" IsChecked="{Binding Yearly}" Foreground="White" />
+        </StackPanel>
+        <TextBlock Text="{Binding Summary}" Foreground="#86EFAC" TextWrapping="Wrap" Margin="0,8,0,0" />
+
+        <TextBlock Text="Номер тикета / комментарий (обязательно, от 5 символов)" Foreground="#94A3B8" Margin="0,14,0,4" />
+        <TextBox x:Name="ReasonBox" Style="{StaticResource FnInput}" Text="{Binding Reason, UpdateSourceTrigger=PropertyChanged}" MaxLength="500"
+                 AutomationProperties.Name="Номер тикета" />
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+            <Button Style="{StaticResource FnGhost}" Content="Отмена" IsCancel="True" Margin="0,0,8,0" />
+            <Button Style="{StaticResource FnButton}" Content="Выдать" IsEnabled="{Binding CanConfirm}" Click="Confirm_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

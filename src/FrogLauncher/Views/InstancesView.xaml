@@ -1,0 +1,269 @@
+<UserControl x:Class="FrogLauncher.Views.InstancesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:FrogLauncher.Views"
+             Style="{StaticResource Page}">
+    <UserControl.Resources>
+        <v:VisibleIfConverter x:Key="VisibleIf" />
+        <v:NullableIntConverter x:Key="NullableInt" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Список инстансов. -->
+        <Border Style="{StaticResource Card}" Margin="0,0,12,0">
+            <DockPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="+ Добавить" Command="{Binding StartCreateCommand}" />
+                    <StackPanel>
+                        <TextBlock Text="Мои версии" Style="{StaticResource H2}" />
+                        <TextBlock Text="{Binding LimitText}" Style="{StaticResource Muted}" />
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Мягкий апселл при лимите. -->
+                <Border DockPanel.Dock="Top" CornerRadius="10" Padding="12" Margin="0,0,0,10" Background="#22F59E0B" BorderBrush="#F59E0B" BorderThickness="1"
+                        Visibility="{Binding Upsell, Converter={StaticResource VisibleIf}}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="/Assets/ui/frog_surprise.png" Height="28" Margin="0,0,8,0" />
+                            <TextBlock Text="{Binding Upsell}" TextWrapping="Wrap" MaxWidth="220" />
+                        </StackPanel>
+                        <Button Style="{StaticResource GhostButton}" Content="Сравнить" Command="{Binding CompareCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <ListBox ItemsSource="{Binding Instances}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Bd" CornerRadius="10" Padding="10,8" Margin="0,3" Background="#10FFFFFF" BorderThickness="1" BorderBrush="Transparent">
+                                            <ContentPresenter />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                <Setter TargetName="Bd" Property="Background" Value="#2222C55E" />
+                                            </Trigger>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="Background" Value="#1822C55E" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="{Binding IconUrl, TargetNullValue=/Assets/ui/minecraft.png}" Height="34" MaxWidth="80" Margin="0,0,10,0" />
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding DisplayVersion}" Style="{StaticResource Muted}" FontSize="12" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- Создание инстанса. -->
+        <Border Grid.Column="1" Style="{StaticResource Card}" Visibility="{Binding IsCreating, Converter={StaticResource VisibleIf}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="Новая версия" Style="{StaticResource H1}" />
+                    <TextBlock Text="Название" Style="{StaticResource Muted}" Margin="0,14,0,4" />
+                    <TextBox Text="{Binding NewName, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <TextBlock Text="Версия Minecraft" Style="{StaticResource Muted}" Margin="0,14,0,4" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <CheckBox Style="{StaticResource Check}" Content="Релизы" IsChecked="{Binding ShowRelease}" Margin="0,0,16,0" />
+                        <CheckBox Style="{StaticResource Check}" Content="Снапшоты" IsChecked="{Binding ShowSnapshot}" Margin="0,0,16,0" />
+                        <CheckBox Style="{StaticResource Check}" Content="Старые (beta/alpha)" IsChecked="{Binding ShowOld}" />
+                    </StackPanel>
+                    <ComboBox ItemsSource="{Binding Versions}" SelectedItem="{Binding NewVersion}" MaxDropDownHeight="320">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Id}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Type}" Foreground="{DynamicResource MutedBrush}" Margin="10,0,0,0" FontSize="12" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBlock Text="Модлоадер" Style="{StaticResource Muted}" Margin="0,14,0,4" />
+                    <ComboBox ItemsSource="{Binding Loaders}" SelectedItem="{Binding NewLoader}" />
+
+                    <StackPanel Visibility="{Binding LoaderVersions.Count, Converter={StaticResource VisibleIf}}">
+                        <TextBlock Text="Версия модлоадера" Style="{StaticResource Muted}" Margin="0,14,0,4" />
+                        <ComboBox ItemsSource="{Binding LoaderVersions}" SelectedItem="{Binding NewLoaderVersion}" DisplayMemberPath="Label" MaxDropDownHeight="320" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0" Visibility="{Binding LoadingLoaders, Converter={StaticResource VisibleIf}}">
+                        <Image Source="/Assets/ui/loader.png" Height="20" Style="{StaticResource Spinning}" />
+                        <TextBlock Text="  Получаем версии…" Style="{StaticResource Muted}" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,22,0,0">
+                        <Button Style="{StaticResource AccentButton}" Content="Создать" Command="{Binding CreateCommand}" Margin="0,0,10,0" />
+                        <Button Style="{StaticResource GhostButton}" Content="Отмена" Command="{Binding CancelCreateCommand}" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,12,0,0"
+                               Text="Файлы игры скачаются при первом запуске. Forge поддерживается от 1.7.10, NeoForge — от 1.20.2." />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Настройки выбранного инстанса. -->
+        <Border Grid.Column="1" Style="{StaticResource Card}"
+                Visibility="{Binding IsCreating, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel DataContext="{Binding Selected}" Visibility="{Binding Converter={StaticResource VisibleIf}}">
+                    <TextBlock Text="{Binding Name}" Style="{StaticResource H1}" />
+                    <TextBlock Text="{Binding DisplayVersion}" Style="{StaticResource Muted}" />
+
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,16,0,4">
+                        <Run Text="Оперативная память: " /><Run Text="{Binding Value, ElementName=RamSlider, Mode=OneWay, StringFormat={}{0:0}}" /><Run Text=" МБ" />
+                    </TextBlock>
+                    <Slider x:Name="RamSlider" Minimum="1024" Maximum="16384" TickFrequency="512" IsSnapToTickEnabled="True" Value="{Binding RamMb}" />
+
+                    <TextBlock Text="Аргументы JVM" Style="{StaticResource Muted}" Margin="0,12,0,4" />
+                    <TextBox Text="{Binding JvmArgs}" FontFamily="Consolas" />
+                    <CheckBox Style="{StaticResource Toggle}" Margin="0,10,0,0" IsChecked="{Binding JvmAutotune}"
+                              IsEnabled="{Binding DataContext.CanAutotune, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                              Content="Автонастройка JVM (Frog+)" />
+
+                    <TextBlock Text="Разрешение (пусто — по умолчанию)" Style="{StaticResource Muted}" Margin="0,12,0,4" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Width="90" Text="{Binding Width, Converter={StaticResource NullableInt}}" />
+                        <TextBlock Text="  ×  " VerticalAlignment="Center" />
+                        <TextBox Width="90" Text="{Binding Height, Converter={StaticResource NullableInt}}" />
+                        <CheckBox Style="{StaticResource Toggle}" Content="Полный экран" IsChecked="{Binding Fullscreen}" Margin="20,0,0,0" />
+                    </StackPanel>
+                    <CheckBox Style="{StaticResource Toggle}" Content="Демо-режим" IsChecked="{Binding Demo}" Margin="0,10,0,0" />
+
+                    <TextBlock Text="Java" Style="{StaticResource Muted}" Margin="0,12,0,4" />
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="Авто"
+                                Command="{Binding DataContext.ResetJavaCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="6,0,0,0" />
+                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="Выбрать…"
+                                Command="{Binding DataContext.PickJavaCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="6,0,0,0" />
+                        <TextBox Text="{Binding JavaPath, TargetNullValue='Автоподбор под версию игры'}" IsReadOnly="True" />
+                    </DockPanel>
+
+                    <WrapPanel Margin="0,18,0,0">
+                        <Button Style="{StaticResource AccentButton}" Content="Сохранить" Margin="0,0,10,0"
+                                Command="{Binding DataContext.SaveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                        <Button Style="{StaticResource ImageButton}" ToolTip="Открыть папку" Margin="0,0,10,0"
+                                Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                            <Image Source="/Assets/ui/folder.png" Height="40" />
+                        </Button>
+                        <Button Style="{StaticResource DangerButton}" Content="Удалить"
+                                Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                    </WrapPanel>
+
+                    <!-- ===== Моды: каталог Modrinth (бесплатно, без лимитов) ===== -->
+                    <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,22,0,14" />
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Style="{StaticResource GhostButton}" Content="Папка mods" Margin="0,0,8,0"
+                                    Command="{Binding DataContext.OpenModsFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                            <Button Style="{StaticResource AccentButton}" Content="🔍 Каталог модов"
+                                    Command="{Binding DataContext.ToggleModCatalogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="/Assets/ui/item_block.png" Height="30" Margin="0,0,10,0" />
+                            <TextBlock Text="Моды" Style="{StaticResource H2}" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" Text="Нужен модлоадер: создайте версию с Fabric, Quilt, Forge или NeoForge."
+                               Visibility="{Binding DataContext.SelectedHasLoader, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
+
+                    <!-- Каталог -->
+                    <Border CornerRadius="12" Padding="12" Margin="0,10,0,0" Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                            Visibility="{Binding DataContext.ShowModCatalog, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource VisibleIf}}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="Найти" Margin="8,0,0,0" IsDefault="True"
+                                        Command="{Binding DataContext.SearchModsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                <TextBox Text="{Binding DataContext.ModQuery, RelativeSource={RelativeSource AncestorType=UserControl}, UpdateSourceTrigger=PropertyChanged}"
+                                         AutomationProperties.Name="Поиск модов" ToolTip="Например: sodium, jei, create" />
+                            </DockPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
+                                        Visibility="{Binding DataContext.IsSearchingMods, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource VisibleIf}}">
+                                <Image Source="/Assets/ui/loader.png" Height="20" Style="{StaticResource Spinning}" />
+                                <TextBlock Text="  Ищем на Modrinth…" Style="{StaticResource Muted}" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding DataContext.ModResults, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="10" Padding="10,8" Margin="0,3" Background="#10FFFFFF">
+                                            <DockPanel>
+                                                <Grid DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,0,0">
+                                                    <Button Style="{StaticResource AccentButton}" Content="Установить" Padding="14,6"
+                                                            Command="{Binding DataContext.InstallModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Visibility="{Binding IsInstalled, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
+                                                    <TextBlock Text="✓ Установлен" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                               Visibility="{Binding IsInstalled, Converter={StaticResource VisibleIf}}" />
+                                                    <Border Background="#E00D1528" CornerRadius="8" Visibility="{Binding IsInstalling, Converter={StaticResource VisibleIf}}">
+                                                        <Image Source="/Assets/ui/loader.png" Height="24" Style="{StaticResource Spinning}" />
+                                                    </Border>
+                                                </Grid>
+                                                <Border DockPanel.Dock="Left" Width="42" Height="42" CornerRadius="8" Margin="0,0,10,0" Background="#22FFFFFF">
+                                                    <Image Source="{Binding Hit.IconUrl, TargetNullValue=/Assets/ui/item_block.png}" Stretch="UniformToFill" />
+                                                </Border>
+                                                <StackPanel>
+                                                    <TextBlock FontWeight="SemiBold">
+                                                        <Run Text="{Binding Hit.Title, Mode=OneWay}" />
+                                                        <Run Text="{Binding DownloadsText, Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" FontSize="11" FontWeight="Normal" />
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Hit.Description}" Style="{StaticResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                               MaxHeight="34" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Style="{StaticResource Muted}" FontSize="11" Margin="0,6,0,0"
+                                       Text="Моды из каталога Modrinth. Обязательные зависимости (например, Fabric API) ставятся автоматически." />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Установленные -->
+                    <TextBlock Text="{Binding DataContext.ModsHint, RelativeSource={RelativeSource AncestorType=UserControl}}" Style="{StaticResource Muted}" Margin="0,10,0,0"
+                               Visibility="{Binding DataContext.ModsHint, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource VisibleIf}}" />
+                    <ItemsControl ItemsSource="{Binding DataContext.ModFiles, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,10,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="10" Padding="10,6" Margin="0,3" Background="#10FFFFFF">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="✕" Padding="10,4" ToolTip="Удалить мод"
+                                                Command="{Binding DataContext.RemoveModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}" />
+                                        <Image DockPanel.Dock="Left" Width="30" Height="30" Margin="0,0,10,0"
+                                               Source="{Binding IconUrl, TargetNullValue=/Assets/ui/item_block.png}" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Muted}" FontSize="11" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</UserControl>

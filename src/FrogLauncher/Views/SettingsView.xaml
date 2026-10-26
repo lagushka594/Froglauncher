@@ -1,0 +1,73 @@
+<UserControl x:Class="FrogLauncher.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:FrogLauncher.Views"
+             Style="{StaticResource Page}">
+    <UserControl.Resources>
+        <v:VisibleIfConverter x:Key="VisibleIf" />
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Assets/main/btn_settings.png" Height="48" Margin="0,0,12,0" />
+                        <TextBlock Text="Настройки" Style="{StaticResource H1}" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <CheckBox Style="{StaticResource Toggle}" Margin="0,18,0,0" IsChecked="{Binding DiscordPresence}"
+                              Content="Показывать активность в Discord («Играет в FrogLauncher», версия, загрузки)" />
+                    <CheckBox Style="{StaticResource Toggle}" Margin="0,12,0,0" IsChecked="{Binding CloseOnLaunch}"
+                              Content="Сворачивать лаунчер после запуска игры" />
+
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,16,0,4">
+                        <Run Text="RAM по умолчанию для новых версий: " /><Run Text="{Binding Value, ElementName=Ram, Mode=OneWay, StringFormat={}{0:0}}" /><Run Text=" МБ" />
+                    </TextBlock>
+                    <Slider x:Name="Ram" Minimum="1024" Maximum="16384" TickFrequency="512" IsSnapToTickEnabled="True" Value="{Binding DefaultRamMb}" Width="420" HorizontalAlignment="Left" />
+
+                    <Button Style="{StaticResource GhostButton}" Content="Открыть папку данных" Command="{Binding OpenDataFolderCommand}"
+                            HorizontalAlignment="Left" Margin="0,16,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="Темы" Style="{StaticResource H2}" />
+                    <TextBlock Text="Премиум-темы открываются подпиской. Если подписка закончится — вернётся «Болото»." Style="{StaticResource Muted}" />
+                    <ItemsControl ItemsSource="{Binding Themes}" Margin="0,10,0,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource ImageButton}" Margin="0,0,10,10"
+                                        Command="{Binding DataContext.ApplyThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Border x:Name="Card" Width="150" CornerRadius="12" Padding="12" BorderThickness="2" BorderBrush="#33FFFFFF" Background="{Binding Theme.Surface}">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="22" Height="22" Fill="{Binding Theme.Accent}" />
+                                                <Ellipse Width="22" Height="22" Fill="{Binding Theme.Accent2}" Margin="-6,0,0,0" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Theme.Name}" FontWeight="SemiBold" Margin="0,8,0,0" />
+                                            <TextBlock Style="{StaticResource Muted}" FontSize="11">
+                                                <Run Text="{Binding Theme.RequiresLabel, Mode=OneWay}" />
+                                            </TextBlock>
+                                            <TextBlock Text="🔒 Заблокирована" FontSize="11" Foreground="{DynamicResource WarnBrush}"
+                                                       Visibility="{Binding Unlocked, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
+                                        </StackPanel>
+                                    </Border>
+                                </Button>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                        <Setter TargetName="Card" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

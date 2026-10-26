@@ -1,0 +1,162 @@
+<UserControl x:Class="FrogLauncher.Views.ProfileView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="clr-namespace:FrogLauncher.Views"
+             Style="{StaticResource Page}">
+    <UserControl.Resources>
+        <v:VisibleIfConverter x:Key="VisibleIf" />
+    </UserControl.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Игровые аккаунты. -->
+        <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="/Assets/main/avatar.png" Height="56" Margin="0,0,12,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Игровые аккаунты" Style="{StaticResource H1}" />
+                        <TextBlock Text="С каким ником заходить в Minecraft" Style="{StaticResource Muted}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding Accounts}" Margin="0,14,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border CornerRadius="10" Padding="10,6" Margin="0,3" Background="#10FFFFFF">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="✕" Padding="10,4"
+                                            Command="{Binding DataContext.RemoveAccountCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" />
+                                    <RadioButton GroupName="acc" VerticalAlignment="Center" Foreground="{DynamicResource TextBrush}" Cursor="Hand"
+                                                 Command="{Binding DataContext.SelectAccountCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                 CommandParameter="{Binding}">
+                                        <TextBlock><Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="  ·  " /><Run Text="{Binding TypeLabel, Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" /></TextBlock>
+                                    </RadioButton>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0">
+                    <Run Text="Активный: " /><Run Text="{Binding SelectedAccount.Name, Mode=OneWay, TargetNullValue='не выбран'}" FontWeight="SemiBold" />
+                </TextBlock>
+
+                <TextBlock Text="Войти через Microsoft (лицензия)" Style="{StaticResource H2}" Margin="0,18,0,6" />
+                <Button Style="{StaticResource AccentButton}" Content="Войти через Microsoft" Command="{Binding LoginMicrosoftCommand}" HorizontalAlignment="Left"
+                        Visibility="{Binding MsWaiting, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
+                <Border CornerRadius="10" Padding="12" Background="#1A06B6D4" BorderBrush="{DynamicResource Accent2Brush}" BorderThickness="1"
+                        Visibility="{Binding MsWaiting, Converter={StaticResource VisibleIf}}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource Muted}" Text="Откройте страницу и введите код (уже скопирован):" />
+                        <TextBlock Text="{Binding DeviceCode.VerificationUri}" Foreground="{DynamicResource Accent2Brush}" Margin="0,4" />
+                        <TextBlock Text="{Binding DeviceCode.UserCode}" FontSize="30" FontWeight="Black" FontFamily="Consolas" />
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Image Source="/Assets/ui/loader.png" Height="20" Style="{StaticResource Spinning}" />
+                            <TextBlock Text="  Ждём подтверждения…" VerticalAlignment="Center" Style="{StaticResource Muted}" />
+                            <Button Style="{StaticResource GhostButton}" Content="Копировать" Command="{Binding CopyCodeCommand}" Margin="14,0,8,0" />
+                            <Button Style="{StaticResource GhostButton}" Content="Отмена" Command="{Binding CancelMicrosoftCommand}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Оффлайн-аккаунт" Style="{StaticResource H2}" Margin="0,18,0,6" />
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="Добавить" Command="{Binding AddOfflineCommand}" Margin="8,0,0,0" />
+                    <TextBox Text="{Binding OfflineNick, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Оффлайн-ник" ToolTip="3–16 символов: латиница, цифры, _" />
+                </DockPanel>
+                <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" Text="Для одиночной игры и серверов в offline-mode. UUID генерируется из ника." />
+            </StackPanel>
+        </Border>
+
+        <!-- Discord (тариф по ролям на сервере). -->
+        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0"
+                Visibility="{Binding UsesDiscord, Converter={StaticResource VisibleIf}}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="/Assets/ui/frog_king.png" Height="52" Margin="0,0,12,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Discord" Style="{StaticResource H1}" />
+                        <TextBlock Text="Тариф включается по вашей роли на нашем Discord-сервере. Играть можно и без входа." Style="{StaticResource Muted}" MaxWidth="360" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Margin="0,16,0,0" Visibility="{Binding DiscordLoggedIn, Converter={StaticResource VisibleIf}}">
+                    <StackPanel Orientation="Horizontal">
+                        <Border Width="44" Height="44" CornerRadius="22" ClipToBounds="True" Margin="0,0,12,0" Background="#5865F2">
+                            <Border.Clip><EllipseGeometry Center="22,22" RadiusX="22" RadiusY="22" /></Border.Clip>
+                            <Image Source="{Binding DiscordAvatar, TargetNullValue=/Assets/ui/avatar.png}" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding DiscordName}" Style="{StaticResource H2}" />
+                                <Border Style="{StaticResource AdminBadge}" Margin="10,0,0,0" Visibility="{Binding IsAdmin, Converter={StaticResource VisibleIf}}">
+                                    <TextBlock Text="ADMIN" FontWeight="Black" FontSize="11" Foreground="White" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource Muted}"><Run Text="Тариф: " /><Run Text="{Binding TierName, Mode=OneWay}" /></TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Text="{Binding DiscordHint}" Style="{StaticResource Muted}" Foreground="{DynamicResource WarnBrush}" Margin="0,10,0,0"
+                               Visibility="{Binding DiscordHint, Converter={StaticResource VisibleIf}}" />
+                    <Button Style="{StaticResource GhostButton}" Content="Выйти из Discord" Command="{Binding LogoutDiscordCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                </StackPanel>
+
+                <StackPanel Margin="0,16,0,0" Visibility="{Binding DiscordLoggedIn, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
+                    <Button Style="{StaticResource AccentButton}" Background="#5865F2" Foreground="White" Content="Войти через Discord" HorizontalAlignment="Left"
+                            Command="{Binding LoginDiscordCommand}"
+                            Visibility="{Binding DiscordWaiting, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding DiscordWaiting, Converter={StaticResource VisibleIf}}">
+                        <Image Source="/Assets/ui/loader.png" Height="22" Style="{StaticResource Spinning}" />
+                        <TextBlock Text="  Подтвердите вход в открывшемся браузере…" VerticalAlignment="Center" Style="{StaticResource Muted}" />
+                        <Button Style="{StaticResource GhostButton}" Content="Отмена" Command="{Binding CancelDiscordCommand}" Margin="12,0,0,0" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Muted}" Margin="0,10,0,0"
+                               Text="Лаунчер увидит только ваш ник и роли на нашем сервере. Пароль от Discord лаунчер не получает." />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Аккаунт FrogLauncher (для подписок через свой сервер). -->
+        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0"
+                Visibility="{Binding UsesDiscord, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <Image Source="/Assets/ui/frog_king.png" Height="52" Margin="0,0,12,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Аккаунт FrogLauncher" Style="{StaticResource H1}" />
+                        <TextBlock Text="Нужен только для подписки. Играть можно без него." Style="{StaticResource Muted}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Margin="0,16,0,0" Visibility="{Binding IsLoggedIn, Converter={StaticResource VisibleIf}}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding LauncherNick}" Style="{StaticResource H2}" />
+                        <Border Style="{StaticResource AdminBadge}" Margin="10,0,0,0" Visibility="{Binding IsAdmin, Converter={StaticResource VisibleIf}}">
+                            <TextBlock Text="ADMIN" FontWeight="Black" FontSize="11" Foreground="White" />
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Muted}"><Run Text="Тариф: " /><Run Text="{Binding TierName, Mode=OneWay}" /></TextBlock>
+                    <Button Style="{StaticResource GhostButton}" Content="Выйти" Command="{Binding LauncherLogoutCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                </StackPanel>
+
+                <StackPanel Margin="0,16,0,0" Visibility="{Binding IsLoggedIn, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
+                    <TextBlock Text="Ник или email" Style="{StaticResource Muted}" Margin="0,0,0,4" />
+                    <TextBox Text="{Binding Login, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Ник или email" />
+                    <StackPanel Visibility="{Binding RegisterMode, Converter={StaticResource VisibleIf}}">
+                        <TextBlock Text="Email" Style="{StaticResource Muted}" Margin="0,10,0,4" />
+                        <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                    <TextBlock Text="Пароль" Style="{StaticResource Muted}" Margin="0,10,0,4" />
+                    <PasswordBox x:Name="Password" AutomationProperties.Name="Пароль" />
+                    <CheckBox Style="{StaticResource Check}" Content="Я новенький — зарегистрироваться" IsChecked="{Binding RegisterMode}" Margin="0,12,0,0" />
+                    <Button Style="{StaticResource AccentButton}" Content="Продолжить" HorizontalAlignment="Left" Margin="0,14,0,0"
+                            Command="{Binding LauncherLoginCommand}" CommandParameter="{Binding ElementName=Password}" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

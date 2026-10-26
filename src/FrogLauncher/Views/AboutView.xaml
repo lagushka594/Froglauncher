@@ -1,0 +1,37 @@
+<UserControl x:Class="FrogLauncher.Views.AboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Style="{StaticResource Page}">
+    <Border Style="{StaticResource Card}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Image Source="/Assets/ui/mascot_big.png" Height="190" VerticalAlignment="Top" Margin="0,0,24,0" Style="{StaticResource Floating}" />
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="О лаунчере" Style="{StaticResource H1}" />
+                <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0"><Run Text="FrogLauncher " /><Run Text="{Binding Version, Mode=OneWay}" /></TextBlock>
+
+                <TextBlock TextWrapping="Wrap" Margin="0,16,0,0" FontSize="14"
+                           Text="FrogLauncher — неофициальный лаунчер Minecraft с открытым исходным кодом. Не является продуктом Mojang или Microsoft и не одобрен ими. Minecraft — товарный знак Mojang AB." />
+                <TextBlock TextWrapping="Wrap" Margin="0,10,0,0" FontSize="14"
+                           Text="Игра запускается на любом тарифе. Подписка даёт доступ только к функциям FrogLauncher и не связана с Mojang/Microsoft." />
+
+                <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+                    <Button Style="{StaticResource AccentButton}" Command="{Binding OpenGitHubCommand}" Margin="0,0,10,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Исходный код на GitHub" Foreground="#06210F" FontWeight="Bold" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource GhostButton}" Content="Папка логов" Command="{Binding OpenLogsCommand}" />
+                </StackPanel>
+                <TextBlock Text="{Binding GitHubUrl}" Style="{StaticResource Muted}" Margin="0,8,0,0" />
+
+                <TextBlock Text="Если игра упала" Style="{StaticResource H2}" Margin="0,24,0,4" />
+                <TextBlock Style="{StaticResource Muted}"
+                           Text="На главной появятся последние 50 строк лога и кнопка «Загрузить на mclo.gs» — ссылку можно отправить в поддержку." />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
