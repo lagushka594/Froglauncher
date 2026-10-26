@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ключи, вшиваемые в exe (необязательно): см. keys.props.example -->
+  <Import Project="keys.props" Condition="Exists('$(MSBuildProjectDirectory)/keys.props')" />
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>FrogLauncher</AssemblyName>
+    <RootNamespace>FrogLauncher</RootNamespace>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Company>FrogLauncher</Company>
+    <Product>FrogLauncher</Product>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <!-- установщик и инструменты — отдельные проекты, в лаунчер не входят -->
+  <ItemGroup>
+    <Compile Remove="Setup\**;tools\**;dist\**" />
+    <Page Remove="Setup\**;tools\**;dist\**" />
+    <ApplicationDefinition Remove="Setup\**;tools\**;dist\**" />
+    <EmbeddedResource Remove="Setup\**;tools\**;dist\**" />
+    <None Remove="Setup\**;tools\**;dist\**" />
+    <Resource Remove="Setup\**;tools\**;dist\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\*.png" />
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>CurseForgeKey</_Parameter1><_Parameter2>$(CurseForgeKey)</_Parameter2></AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>MsClientId</_Parameter1><_Parameter2>$(MsClientId)</_Parameter2></AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>NewsUrl</_Parameter1><_Parameter2>$(NewsUrl)</_Parameter2></AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>UpdateRepo</_Parameter1><_Parameter2>$(UpdateRepo)</_Parameter2></AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>DiscordUrl</_Parameter1><_Parameter2>$(DiscordUrl)</_Parameter2></AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute"><_Parameter1>DiscordAppId</_Parameter1><_Parameter2>$(DiscordAppId)</_Parameter2></AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
+  </ItemGroup>
+
+</Project>

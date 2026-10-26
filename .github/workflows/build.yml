@@ -1,0 +1,38 @@
+name: Build FrogLauncher
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # ключи берутся из секретов репозитория (Settings → Secrets) — необязательно
+      - name: keys.props
+        shell: pwsh
+        env:
+          CF: ${{ secrets.CURSEFORGE_KEY }}
+          MS: ${{ secrets.MS_CLIENT_ID }}
+          NEWS: ${{ secrets.NEWS_URL }}
+          DC: ${{ secrets.DISCORD_URL }}
+          DCID: ${{ secrets.DISCORD_APP_ID }}
+        run: |
+          "<Project><PropertyGroup><CurseForgeKey>$env:CF</CurseForgeKey><MsClientId>$env:MS</MsClientId><NewsUrl>$env:NEWS</NewsUrl><DiscordUrl>$env:DC</DiscordUrl><DiscordAppId>$env:DCID</DiscordAppId></PropertyGroup></Project>" | Out-File keys.props -Encoding utf8
+
+      - run: dotnet publish FrogLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o build/launcher
+      - run: |
+          New-Item -ItemType Directory -Force Setup/Payload | Out-Null
+          Copy-Item build/launcher/FrogLauncher.exe Setup/Payload/FrogLauncher.exe -Force
+        shell: pwsh
+      - run: dotnet publish Setup/FrogLauncherSetup.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o dist
+      - run: dotnet publish tools/NewsPublisher/NewsPublisher.csproj -c Release -o dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FrogLauncher
+          path: |
+            dist/FrogLauncherSetup.exe
+            dist/NewsPublisher.exe

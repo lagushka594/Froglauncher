@@ -1,0 +1,18 @@
+<!-- Скопируйте в keys.props и заполните — значения будут вшиты в FrogLauncher.exe при сборке.
+     Пользователям лаунчера после этого ничего вводить не нужно. keys.props в Git не добавляйте! -->
+<Project>
+  <PropertyGroup>
+    <!-- CurseForge API key: https://console.curseforge.com/ (бесплатно) -->
+    <CurseForgeKey></CurseForgeKey>
+    <!-- Microsoft Azure Application (client) ID — шаги в README -->
+    <MsClientId></MsClientId>
+    <!-- Ссылка на news.json с новостями лаунчера (её печатает NewsPublisher) -->
+    <NewsUrl></NewsUrl>
+    <!-- ★ ССЫЛКА НА ВАШ DISCORD-СЕРВЕР (кнопка Discord в лаунчере), например https://discord.gg/xxxxxxx -->
+    <DiscordUrl></DiscordUrl>
+    <!-- Application ID для статуса «Играет в FrogLauncher»: https://discord.com/developers/applications → New Application (назовите её FrogLauncher) → скопируйте Application ID -->
+    <DiscordAppId></DiscordAppId>
+    <!-- owner/repo на GitHub для проверки обновлений (необязательно) -->
+    <UpdateRepo></UpdateRepo>
+  </PropertyGroup>
+</Project>
