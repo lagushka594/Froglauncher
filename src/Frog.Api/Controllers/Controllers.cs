@@ -155,6 +155,10 @@ public sealed class AdminController(AdminService admin) : ControllerBase
     public Task<IReadOnlyList<AdminGrantDto>> Grants([FromQuery(Name = "user_id")] Guid? userId, CancellationToken ct) =>
         admin.GrantsAsync(userId, ct);
 
+    /// <summary>Сколько оплат прошло по каждому промокоду (статистика партнёров).</summary>
+    [HttpGet("promo-stats")]
+    public Task<IReadOnlyList<PromoStatDto>> PromoStats(CancellationToken ct) => admin.PromoStatsAsync(ct);
+
     [HttpGet("grants/export")]
     public async Task<FileContentResult> Export(CancellationToken ct) =>
         File(await admin.ExportCsvAsync(ct), "text/csv; charset=utf-8", $"admin_audit_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");

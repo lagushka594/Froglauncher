@@ -22,8 +22,29 @@ public partial class App : Application
 
     public static IServiceProvider Services => ((App)Current)._host!.Services;
 
+    /// <summary>Язык выбираем до разбора App.xaml: строки разметки переводятся при загрузке.</summary>
+    public App() => L.Init(LanguageBootstrap.ReadSetting());
+
+    /// <summary>Перезапуск (после смены языка): новый процесс ждёт, пока этот закроется и освободит mutex.</summary>
+    public static void Restart()
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!)
+        {
+            UseShellExecute = false,
+            Arguments = $"--wait-pid {Environment.ProcessId}",
+        });
+        (Services.GetService(typeof(TrayService)) as TrayService)?.MarkExiting();
+        Current.Shutdown();
+    }
+
     protected override async void OnStartup(StartupEventArgs e)
     {
+        if (e.Args.Length >= 2 && e.Args[0] == "--wait-pid" && int.TryParse(e.Args[1], out var pid))
+        {
+            try { System.Diagnostics.Process.GetProcessById(pid).WaitForExit(15_000); }
+            catch (ArgumentException) { /* уже закрылся */ }
+        }
+
         // Второй запуск (ссылка froglauncher:// из браузера) — передаём ссылку первому и выходим.
         _single = new SingleInstance();
         if (!_single.IsFirst)
@@ -61,6 +82,7 @@ public partial class App : Application
 
         _single.Listen(msg => Dispatcher.Invoke(() =>
         {
+            main.Show();
             main.Activate();
             if (main.WindowState == WindowState.Minimized) main.WindowState = WindowState.Normal;
             if (UrlScheme.TryParse(msg, out var uri)) vm.HandleDeepLink(uri);
@@ -102,6 +124,7 @@ public partial class App : Application
         s.AddSingleton<ModLoaderService>();
         s.AddSingleton<ModrinthService>();
         s.AddSingleton<ModpackService>();
+        s.AddSingleton<ServerCatalog>();
         s.AddSingleton<GameAuthService>();
         s.AddSingleton<LaunchService>();
         s.AddSingleton<InstanceService>();
@@ -109,14 +132,28 @@ public partial class App : Application
         s.AddSingleton<ThemeService>();
         s.AddSingleton<ToastService>();
         s.AddSingleton<DiscordPresenceService>();
+        s.AddSingleton<HotkeyService>();
+        s.AddSingleton<TrayService>();
+        s.AddSingleton<PlayStatsService>();
+        s.AddSingleton<AdvancementService>();
+        s.AddSingleton<PromoService>();
+        s.AddSingleton<NewYearService>();
+        s.AddSingleton<PackTransferService>();
+        s.AddSingleton<SoundService>();
+        s.AddSingleton<WorldService>();
+        s.AddSingleton<UpdateService>();
 
         s.AddSingleton<MainViewModel>();
         s.AddSingleton<HomeViewModel>();
         s.AddSingleton<InstancesViewModel>();
         s.AddSingleton<ModpacksViewModel>();
+        s.AddSingleton<ServersViewModel>();
+        s.AddSingleton<OnboardingViewModel>();
         s.AddSingleton<JavaViewModel>();
         s.AddSingleton<SettingsViewModel>();
         s.AddSingleton<ProfileViewModel>();
+        s.AddSingleton<StatsViewModel>();
+        s.AddSingleton<ScreenshotsViewModel>();
         s.AddSingleton<SubscriptionViewModel>();
         s.AddSingleton<AboutViewModel>();
         s.AddSingleton<MainWindow>();
@@ -133,6 +170,7 @@ public partial class App : Application
     {
         if (_host is not null)
         {
+            Services.GetRequiredService<TrayService>().Dispose();
             await Services.GetRequiredService<DiscordPresenceService>().DisposeAsync();
             await _host.StopAsync(TimeSpan.FromSeconds(2));
             _host.Dispose();

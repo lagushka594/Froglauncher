@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "note": "Акции и промокоды FrogLauncher. Лаунчер берёт файл с GitHub (main), без сети — встроенную копию. Даты акций — MM-dd, повторяются каждый год. Скидки не суммируются: действует большая. Код можно хранить открыто (code) или как SHA-256 от кода в верхнем регистре (hash) — тогда его не подсмотреть в репозитории.",
+  "events": [
+    { "id": "birthday", "title": "День рождения FrogLauncher", "emoji": "🎂", "percent": 25, "from": "10-26", "to": "10-28" },
+    { "id": "halloween", "title": "Хэллоуин", "emoji": "🎃", "percent": 30, "from": "10-29", "to": "11-02" },
+    { "id": "black-friday", "title": "Чёрная пятница", "emoji": "🖤", "percent": 50, "rule": "black-friday" },
+    { "id": "new-year", "title": "Новый год", "emoji": "🎄", "percent": 40, "from": "12-20", "to": "01-10" }
+  ],
+  "codes": [
+    { "code": "FROG2026", "percent": 40, "tiers": ["frog_legend"], "valid_from": "2026-12-20T00:00:00+03:00", "valid_until": "2027-01-10T23:59:59+03:00" }
+  ]
+}

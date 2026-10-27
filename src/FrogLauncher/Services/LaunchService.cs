@@ -55,11 +55,12 @@ public sealed class LaunchService(
     public event Action<GameSession, CrashInfo?>? Exited;
 
     /// <summary>Установить недостающее и запустить игру.</summary>
+    /// <param name="server">Адрес сервера для автоподключения (host или host:port) или null.</param>
     public async Task<GameSession> LaunchAsync(Instance inst, GameAccount account, bool autotune,
-        IProgress<DownloadProgress>? progress, CancellationToken ct)
+        IProgress<DownloadProgress>? progress, CancellationToken ct, string? server = null)
     {
         if (Current is { Process.HasExited: false })
-            throw new InvalidOperationException("Игра уже запущена");
+            throw new InvalidOperationException(L.T("Игра уже запущена"));
 
         // 1. Версия + модлоадер (повторная установка быстрая: всё проверяется по хэшам).
         var versionId = await loaders.InstallAsync(inst.Loader, inst.GameVersion, inst.LoaderVersion, progress, ct);
@@ -68,21 +69,32 @@ public sealed class LaunchService(
 
         // 2. Java: ручной выбор из инстанса либо автоподбор.
         string javaExe;
+        var javaMajor = JavaService.RequiredMajor(v);
         if (!string.IsNullOrEmpty(inst.JavaPath) && File.Exists(inst.JavaPath)) javaExe = inst.JavaPath;
-        else javaExe = (await java.EnsureAsync(JavaService.RequiredMajor(v), progress, ct)).JavaExe;
+        else javaExe = (await java.EnsureAsync(javaMajor, progress, ct)).JavaExe;
 
         // 3. Аккаунт: обновить токен Microsoft при необходимости.
-        progress?.Report(DownloadProgress.Indeterminate("Проверяем аккаунт"));
+        progress?.Report(DownloadProgress.Indeterminate(L.T("Проверяем аккаунт")));
         account = await auth.EnsureFreshAsync(account, ct);
 
         // 4. Natives и командная строка.
-        progress?.Report(DownloadProgress.Indeterminate("Запускаем игру"));
+        progress?.Report(DownloadProgress.Indeterminate(L.T("Запускаем игру")));
         Directory.CreateDirectory(inst.GameDirectory);
         var nativesDir = Path.Combine(inst.Directory, "natives");
         ExtractNatives(v, nativesDir);
         EnsureVersionJar(v);
 
-        var args = BuildArguments(v, inst, account, nativesDir, autotune);
+        var args = BuildArguments(v, inst, account, nativesDir, autotune, javaMajor, server);
+
+        // Ноутбуки с двумя видеокартами: просим Windows отдать игре дискретную.
+        if (inst.PreferDiscreteGpu)
+        {
+            try { GpuPreference.Apply(javaExe, discrete: true); }
+            catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException)
+            {
+                log.LogWarning(ex, "Не удалось задать предпочтение видеокарты");
+            }
+        }
         var psi = new ProcessStartInfo(javaExe)
         {
             WorkingDirectory = inst.GameDirectory,
@@ -113,9 +125,22 @@ public sealed class LaunchService(
         process.Exited += (_, _) => OnExited(session);
 
         _stopRequested = false;
-        if (!process.Start()) throw new InvalidOperationException("Не удалось запустить Java");
+        if (!process.Start()) throw new InvalidOperationException(L.T("Не удалось запустить Java"));
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
+        try
+        {
+            process.PriorityClass = inst.Priority switch
+            {
+                "high" => ProcessPriorityClass.High,
+                "abovenormal" => ProcessPriorityClass.AboveNormal,
+                _ => ProcessPriorityClass.Normal,
+            };
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            log.LogWarning(ex, "Не удалось изменить приоритет процесса");
+        }
         Current = session;
         inst.LastPlayedAt = DateTimeOffset.Now;
         return session;
@@ -157,7 +182,7 @@ public sealed class LaunchService(
     public async Task<string> UploadToMclogsAsync(CrashInfo crash, CancellationToken ct)
     {
         var text = crash.CrashReportPath is { } p && File.Exists(p)
-            ? await File.ReadAllTextAsync(p, ct) + "\n\n----- последние строки лога -----\n" + crash.Text
+            ? await File.ReadAllTextAsync(p, ct) + L.T("\n\n----- последние строки лога -----\n") + crash.Text
             : crash.Text;
 
         var http = httpFactory.CreateClient(DownloadService.HttpClientName);
@@ -166,7 +191,7 @@ public sealed class LaunchService(
         var json = JsonNode.Parse(await resp.Content.ReadAsStringAsync(ct));
         return json?["success"]?.GetValue<bool>() == true
             ? json["url"]!.GetValue<string>()
-            : throw new InvalidOperationException(json?["error"]?.GetValue<string>() ?? "mclo.gs не принял лог");
+            : throw new InvalidOperationException(json?["error"]?.GetValue<string>() ?? L.T("mclo.gs не принял лог"));
     }
 
     /// <summary>
@@ -193,9 +218,12 @@ public sealed class LaunchService(
 
     // ---------------- Командная строка ----------------
 
-    internal static List<string> BuildArguments(VersionInfo v, Instance inst, GameAccount account, string nativesDir, bool autotune)
+    internal static List<string> BuildArguments(VersionInfo v, Instance inst, GameAccount account, string nativesDir, bool autotune,
+        int javaMajor = 17, string? server = null)
     {
-        var features = new LaunchFeatures(inst.Demo, inst.Width is > 0 && inst.Height is > 0);
+        // 1.20+: Quick Play (--quickPlayMultiplayer); старые версии понимают --server/--port.
+        var quickPlay = server is not null && (v.Arguments?.Game.Any(a => a.ToString().Contains("quickPlayMultiplayer")) ?? false);
+        var features = new LaunchFeatures(inst.Demo, inst.Width is > 0 && inst.Height is > 0, quickPlay);
         var classpath = BuildClasspath(v);
         var vars = new Dictionary<string, string>
         {
@@ -221,6 +249,7 @@ public sealed class LaunchService(
             ["classpath"] = string.Join(Path.PathSeparator, classpath),
             ["classpath_separator"] = Path.PathSeparator.ToString(),
             ["library_directory"] = LauncherPaths.Libraries,
+            ["quickPlayMultiplayer"] = server ?? "",
         };
 
         string Sub(string s)
@@ -234,8 +263,19 @@ public sealed class LaunchService(
         // --- JVM ---
         var ram = Math.Max(512, inst.RamMb);
         args.Add($"-Xmx{ram}M");
-        args.Add($"-Xms{Math.Min(ram, 1024)}M");
-        if (autotune && inst.JvmAutotune)
+        args.Add($"-Xms{Math.Clamp(inst.RamMinMb ?? Math.Min(ram, 1024), 256, ram)}M");
+
+        // Сборщик мусора. ZGC есть только в Java 17+ — на старой Java остаёмся на G1.
+        var gc = inst.Gc == "zgc" && javaMajor < 17 ? "g1" : inst.Gc;
+        if (gc == "zgc")
+        {
+            args.Add("-XX:+UseZGC");
+            if (javaMajor >= 21) args.Add("-XX:+ZGenerational");
+        }
+        else if (gc == "parallel") args.Add("-XX:+UseParallelGC");
+        else if (!(autotune && inst.JvmAutotune)) args.Add("-XX:+UseG1GC");
+
+        if (gc == "g1" && autotune && inst.JvmAutotune)
             args.AddRange(new[]
             {
                 // Frog+ jvm_autotune: G1 с короткими паузами (флаги в духе Aikar), подходят для 1.8+.
@@ -264,7 +304,7 @@ public sealed class LaunchService(
             args.Add(vars["classpath"]);
         }
 
-        args.Add(v.MainClass ?? throw new InvalidDataException("В version.json нет mainClass"));
+        args.Add(v.MainClass ?? throw new InvalidDataException(L.T("В version.json нет mainClass")));
 
         // --- Игра ---
         if (v.Arguments?.Game is { Count: > 0 } game)
@@ -278,6 +318,11 @@ public sealed class LaunchService(
         }
 
         if (inst.Fullscreen) args.Add("--fullscreen");
+        if (server is not null && !quickPlay)
+        {
+            var (host, port) = ServerPing.ParseAddress(server);
+            args.AddRange(new[] { "--server", host, "--port", port.ToString() });
+        }
         return args;
     }
 

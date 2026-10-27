@@ -1,0 +1,25 @@
+{
+  "format": 1,
+  "updated": "2026-10-27",
+  "note": "Список серверов для вкладки «Серверы». Лаунчер берёт его с GitHub (main), без сети — встроенную копию. Онлайн, версия и пинг — живые, через Server List Ping. Серверы не связаны с FrogLauncher.",
+  "servers": [
+    { "name": "Hypixel", "address": "mc.hypixel.net", "region": "Global", "tags": ["мини-игры", "bedwars", "skyblock", "pvp"], "description": "Крупнейший сервер мини-игр: BedWars, SkyBlock, SkyWars, Murder Mystery." },
+    { "name": "CubeCraft", "address": "play.cubecraft.net", "region": "EU", "tags": ["мини-игры", "bedwars", "skyblock"], "description": "Мини-игры и SkyBlock, европейский сервер." },
+    { "name": "Wynncraft", "address": "play.wynncraft.com", "region": "Global", "tags": ["rpg", "приключения"], "description": "MMORPG в Minecraft: квесты, классы, огромная карта." },
+    { "name": "Complex Gaming", "address": "hub.mc-complex.com", "region": "NA", "tags": ["pixelmon", "выживание", "skyblock"], "description": "Pixelmon, выживание, SkyBlock и прочие режимы." },
+    { "name": "PikaNetwork", "address": "play.pika-network.net", "region": "Global", "tags": ["мини-игры", "prison", "bedwars"], "description": "Мини-игры, OP Prison, BedWars." },
+    { "name": "JartexNetwork", "address": "play.jartexnetwork.com", "region": "Global", "tags": ["мини-игры", "skyblock", "bedwars"], "description": "Мини-игры и SkyBlock." },
+    { "name": "Mineland", "address": "mineland.net", "region": "Global", "tags": ["мини-игры", "выживание"], "description": "Мини-игры и выживание." },
+    { "name": "ManaCube", "address": "play.manacube.com", "region": "NA", "tags": ["skyblock", "prison", "parkour"], "description": "SkyBlock, Prison, Parkour." },
+    { "name": "BlocksMC", "address": "mc.blocksmc.com", "region": "Global", "tags": ["мини-игры", "bedwars", "pvp"], "description": "Мини-игры: BedWars, SkyWars, Pillars of Fortune." },
+    { "name": "Hoplite", "address": "play.hoplite.gg", "region": "NA", "tags": ["pvp", "battle royale"], "description": "Battle royale и PvP-режимы." },
+    { "name": "LemonCloud", "address": "play.lemoncloud.net", "region": "NA", "tags": ["skyblock", "выживание", "prison"], "description": "SkyBlock, Factions, Survival, Prison, Creative." },
+    { "name": "2b2t", "address": "2b2t.org", "region": "Global", "tags": ["анархия", "выживание"], "description": "Старейший анархический сервер без правил. Очередь на вход бывает долгой." },
+    { "name": "FunTime", "address": "mc.funtime.su", "region": "RU", "tags": ["анархия", "выживание", "pvp"], "description": "Один из самых популярных русских серверов: анархия, гриферство, PvP." },
+    { "name": "ReallyWorld", "address": "mc.reallyworld.ru", "region": "RU", "tags": ["анархия", "выживание", "pvp"], "description": "Русский сервер: анархия и выживание." },
+    { "name": "HolyWorld", "address": "mc.holyworld.ru", "region": "RU", "tags": ["анархия", "выживание", "pvp"], "description": "Русский сервер: анархия, классика и PvP." },
+    { "name": "MineBlaze", "address": "mc.mineblaze.net", "region": "RU", "tags": ["выживание", "мини-игры", "pvp"], "description": "Русский сервер: выживание, мини-игры, PvP." },
+    { "name": "DexLand", "address": "mc.dexland.org", "region": "RU", "tags": ["мини-игры", "bedwars", "выживание"], "description": "Русский сервер: выживание, BedWars, SkyWars." },
+    { "name": "SkyTime", "address": "mc.skytime.su", "region": "RU", "tags": ["анархия", "выживание"], "description": "Русский сервер: анархия и выживание." }
+  ]
+}

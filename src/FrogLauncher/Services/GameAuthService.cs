@@ -71,7 +71,7 @@ public sealed partial class GameAuthService(
     {
         nick = nick.Trim();
         if (!NickRegex().IsMatch(nick))
-            throw new GameAuthException("Ник: 3–16 символов, латиница, цифры и _");
+            throw new GameAuthException(L.T("Ник: 3–16 символов, латиница, цифры и _"));
 
         var acc = new GameAccount { Type = AccountType.Offline, Name = nick, Uuid = OfflineUuid(nick), AccessToken = "0" };
         Upsert(acc);
@@ -92,7 +92,7 @@ public sealed partial class GameAuthService(
     public async Task<DeviceCodeInfo> BeginMicrosoftLoginAsync(CancellationToken ct)
     {
         if (string.IsNullOrEmpty(ClientId))
-            throw new GameAuthException("Не задан MicrosoftClientId в appsettings.json");
+            throw new GameAuthException(L.T("Не задан MicrosoftClientId в appsettings.json"));
 
         using var resp = await Http.PostAsync(MsAuthority + "devicecode", Form(("client_id", ClientId), ("scope", Scope)), ct);
         var j = await ReadJsonAsync(resp, ct);
@@ -130,15 +130,15 @@ public sealed partial class GameAuthService(
                     interval += TimeSpan.FromSeconds(5);
                     continue;
                 case "authorization_declined":
-                    throw new GameAuthException("Вход отклонён");
+                    throw new GameAuthException(L.T("Вход отклонён"));
                 case "expired_token":
-                    throw new GameAuthException("Код истёк, начните вход заново");
+                    throw new GameAuthException(L.T("Код истёк, начните вход заново"));
                 default:
-                    throw new GameAuthException(j["error_description"]?.GetValue<string>() ?? "Ошибка входа Microsoft");
+                    throw new GameAuthException(j["error_description"]?.GetValue<string>() ?? L.T("Ошибка входа Microsoft"));
             }
         }
 
-        throw new GameAuthException("Код истёк, начните вход заново");
+        throw new GameAuthException(L.T("Код истёк, начните вход заново"));
     }
 
     /// <summary>Перед запуском: обновить токен Minecraft, если он истекает (ротация refresh-токена Microsoft).</summary>
@@ -146,14 +146,14 @@ public sealed partial class GameAuthService(
     {
         if (acc.Type != AccountType.Microsoft) return acc;
         if (acc.AccessTokenExpiresAt > DateTimeOffset.UtcNow.AddMinutes(5)) return acc;
-        if (acc.MsRefreshToken is null) throw new GameAuthException("Сессия Microsoft истекла — войдите заново");
+        if (acc.MsRefreshToken is null) throw new GameAuthException(L.T("Сессия Microsoft истекла — войдите заново"));
 
         using var resp = await Http.PostAsync(MsAuthority + "token", Form(
             ("grant_type", "refresh_token"),
             ("client_id", ClientId),
             ("refresh_token", acc.MsRefreshToken),
             ("scope", Scope)), ct);
-        if (!resp.IsSuccessStatusCode) throw new GameAuthException("Сессия Microsoft истекла — войдите заново");
+        if (!resp.IsSuccessStatusCode) throw new GameAuthException(L.T("Сессия Microsoft истекла — войдите заново"));
         var j = JsonNode.Parse(await resp.Content.ReadAsStringAsync(ct))!;
 
         var fresh = await MinecraftFromMsTokenAsync(j["access_token"]!.GetValue<string>(),
@@ -190,11 +190,11 @@ public sealed partial class GameAuthService(
         if (!xstsResp.IsSuccessStatusCode)
             throw new GameAuthException(xsts["XErr"]?.GetValue<long>() switch
             {
-                2148916233 => "У аккаунта Microsoft нет профиля Xbox. Создайте его на xbox.com и повторите.",
-                2148916235 => "Xbox Live недоступен в вашей стране.",
-                2148916236 or 2148916237 => "Нужна верификация возраста на xbox.com.",
-                2148916238 => "Детский аккаунт: его нужно добавить в семейную группу взрослым.",
-                _ => "Xbox Live отклонил вход",
+                2148916233 => L.T("У аккаунта Microsoft нет профиля Xbox. Создайте его на xbox.com и повторите."),
+                2148916235 => L.T("Xbox Live недоступен в вашей стране."),
+                2148916236 or 2148916237 => L.T("Нужна верификация возраста на xbox.com."),
+                2148916238 => L.T("Детский аккаунт: его нужно добавить в семейную группу взрослым."),
+                _ => L.T("Xbox Live отклонил вход"),
             });
 
         var uhs = xsts["DisplayClaims"]!["xui"]![0]!["uhs"]!.GetValue<string>();
@@ -211,7 +211,7 @@ public sealed partial class GameAuthService(
         req.Headers.Authorization = new("Bearer", mcToken);
         using var profResp = await Http.SendAsync(req, ct);
         if (profResp.StatusCode == System.Net.HttpStatusCode.NotFound)
-            throw new GameAuthException("На этом аккаунте Microsoft не куплена Minecraft: Java Edition.");
+            throw new GameAuthException(L.T("На этом аккаунте Microsoft не куплена Minecraft: Java Edition."));
         var profile = await ReadJsonAsync(profResp, ct);
 
         log.LogInformation("Вход Microsoft: {Nick}", profile["name"]!.GetValue<string>());
@@ -245,7 +245,7 @@ public sealed partial class GameAuthService(
     {
         using var resp = await Http.PostAsJsonAsync(url, body, ct);
         if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden && url.Contains("minecraftservices"))
-            throw new GameAuthException("Minecraft отклонил приложение: Client ID должен быть одобрен Mojang (см. README).");
+            throw new GameAuthException(L.T("Minecraft отклонил приложение: Client ID должен быть одобрен Mojang (см. README)."));
         return await ReadJsonAsync(resp, ct);
     }
 
@@ -253,7 +253,7 @@ public sealed partial class GameAuthService(
     {
         var text = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
-            throw new GameAuthException($"Ошибка авторизации ({(int)resp.StatusCode})");
+            throw new GameAuthException(L.T($"Ошибка авторизации ({(int)resp.StatusCode})"));
         return JsonNode.Parse(text)!;
     }
 

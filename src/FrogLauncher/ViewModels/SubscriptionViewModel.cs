@@ -39,14 +39,27 @@ public partial class TierCardViewModel : ObservableObject
     public IReadOnlyList<string> Features { get; }
 
     [ObservableProperty] private bool _yearly;
+    /// <summary>Скидка для текущего периода (акция или промокод) — пересчитывает страница.</summary>
+    [ObservableProperty] private Discount? _discount;
 
-    public string PriceText => IsFree ? "Бесплатно" : $"{(Yearly ? Tier.PriceYear : Tier.PriceMonth):0} ₽";
-    public string PeriodText => IsFree ? "" : Yearly ? "в год" : "в месяц";
-    public string? YearHint => !IsFree && Yearly ? $"≈ {Tier.PriceYear / 12:0} ₽/мес · 2 месяца в подарок" : null;
+    public decimal BasePrice => (Yearly ? Tier.PriceYear : Tier.PriceMonth) ?? 0;
+    public decimal FinalPrice => Discount?.Apply(BasePrice) ?? BasePrice;
+    public bool HasDiscount => !IsFree && Discount is not null;
+    public string OldPriceText => HasDiscount ? $"{BasePrice:0} ₽" : "";
+    public string DiscountBadge => Discount is { } d ? $"−{d.Percent}% · {d.Emoji} {(d.Code is null ? L.T(d.Label) : d.Label)}".Replace("·  ", "· ") : "";
+
+    public string PriceText => IsFree ? L.T("Бесплатно") : $"{FinalPrice:0} ₽";
+    public string PeriodText => IsFree ? "" : Yearly ? L.T("в год") : L.T("в месяц");
+    public string? YearHint => !IsFree && Yearly ? L.T($"≈ {Tier.PriceYear / 12:0} ₽/мес · 2 месяца в подарок") : null;
     public bool CanBuy => !IsFree && !IsCurrent;
+
+    partial void OnDiscountChanged(Discount? value) => OnPropertyChanged(string.Empty);
 
     partial void OnYearlyChanged(bool value)
     {
+        OnPropertyChanged(nameof(BasePrice));
+        OnPropertyChanged(nameof(FinalPrice));
+        OnPropertyChanged(nameof(OldPriceText));
         OnPropertyChanged(nameof(PriceText));
         OnPropertyChanged(nameof(PeriodText));
         OnPropertyChanged(nameof(YearHint));
@@ -64,8 +77,71 @@ public partial class SubscriptionViewModel(
     GameAuthService accounts,
     ToastService toasts,
     IOptions<LauncherOptions> options,
-    ILogger<SubscriptionViewModel> log) : ObservableObject, IPageActivated
+    PromoService promos,
+    NewYearService newYear,
+    ILogger<SubscriptionViewModel> log) : ObservableObject, IPageActivated, IRefreshable
 {
+    // ---------- Акции и промокоды ----------
+    [ObservableProperty] private string _promoInput = "";
+    [ObservableProperty] private string? _appliedCode;
+    [ObservableProperty] private string? _promoMessage;
+    [ObservableProperty] private bool _promoError;
+    [ObservableProperty] private string? _eventBanner;
+    [ObservableProperty] private bool _showPromoBox;
+
+    private void ApplyDiscounts()
+    {
+        var now = new DateTimeOffset(AppClock.Now);
+        var period = IsYearly ? BillingPeriod.Year : BillingPeriod.Month;
+        // Новогодний купон (подарки за вход) — ещё один кандидат; скидки по-прежнему не суммируются.
+        var gift = newYear.ActiveCoupon(AppClock.Today);
+        foreach (var t in Tiers)
+        {
+            var best = t.IsFree ? null : promos.Catalog.Best(t.Tier.Slug, period, AppliedCode, now);
+            if (!t.IsFree && gift > (best?.Percent ?? 0)) best = new Discount(gift, "gift", L.T("Новогодний подарок"), null, null, "🎁");
+            t.Discount = best;
+        }
+        var ev = promos.Catalog.ActiveEvents(DateOnly.FromDateTime(now.LocalDateTime)).OrderByDescending(e => e.Percent).FirstOrDefault();
+        EventBanner = ev is null ? null : L.T($"{ev.Emoji} {ev.Title}: −{ev.Percent}% на тарифы — скидка уже в ценах");
+    }
+
+    [RelayCommand]
+    private void TogglePromo() => ShowPromoBox = !ShowPromoBox;
+
+    /// <summary>Код проверяется для каждого тарифа: подходит хотя бы к одному — применяем.</summary>
+    [RelayCommand]
+    private void ApplyPromo()
+    {
+        var code = PromoCatalog.Normalize(PromoInput);
+        if (code.Length == 0) return;
+        var period = IsYearly ? BillingPeriod.Year : BillingPeriod.Month;
+        var checks = Tiers.Where(t => !t.IsFree)
+            .Select(t => promos.Catalog.Check(code, t.Tier.Slug, period, DateTimeOffset.Now, out _)).ToList();
+        var result = checks.Contains(PromoCheck.Ok) ? PromoCheck.Ok
+            : checks.FirstOrDefault(c => c != PromoCheck.Unknown && c != PromoCheck.WrongTier, checks.FirstOrDefault());
+        PromoError = result != PromoCheck.Ok;
+        if (result == PromoCheck.Ok)
+        {
+            AppliedCode = code;
+            var p = promos.Catalog.Find(code)!;
+            PromoMessage = $"«{code}»: −{p.Percent}%" + (p.Tiers.Count > 0 ? L.T(" на ") + string.Join(", ", p.Tiers.Select(TierNames.Display)) : "") +
+                           (p.Partner is { Length: > 0 } partner ? L.T($" · от {partner}") : "");
+        }
+        else PromoMessage = L.T(PromoCatalog.Explain(result));
+        ApplyDiscounts();
+    }
+
+    [RelayCommand]
+    private void ClearPromo()
+    {
+        AppliedCode = null;
+        PromoInput = "";
+        PromoMessage = null;
+        ApplyDiscounts();
+    }
+
+    public Task RefreshPageAsync() => RefreshAsync();
+
     public ObservableCollection<TierCardViewModel> Tiers { get; } = new();
     public ObservableCollection<PaymentHistoryItem> History { get; } = new();
 
@@ -95,7 +171,14 @@ public partial class SubscriptionViewModel(
         entitlements.Changed -= OnEntitlementsChanged;
         entitlements.Changed += OnEntitlementsChanged;
         UpdateStatus();
+        _ = RefreshPromosAsync();
         await LoadTiersAsync();
+    }
+
+    private async Task RefreshPromosAsync()
+    {
+        await promos.RefreshAsync(CancellationToken.None);
+        ApplyDiscounts();
     }
 
     private void OnEntitlementsChanged() =>
@@ -108,6 +191,7 @@ public partial class SubscriptionViewModel(
     partial void OnIsYearlyChanged(bool value)
     {
         foreach (var t in Tiers) t.Yearly = value;
+        ApplyDiscounts();
     }
 
     private static string TiersCacheFile => Path.Combine(LauncherPaths.Cache, "tiers.json");
@@ -133,7 +217,7 @@ public partial class SubscriptionViewModel(
         {
             log.LogWarning("Тарифы недоступны: {Message}", ex.Message);
             RebuildCards(LoadOfflineTiers());
-            Error = "Нет связи с сервером — показаны сохранённые тарифы. Оформить подписку можно, когда сервер станет доступен; игра запускается как обычно.";
+            Error = L.T("Нет связи с сервером — показаны сохранённые тарифы. Оформить подписку можно, когда сервер станет доступен; игра запускается как обычно.");
         }
         finally
         {
@@ -165,6 +249,7 @@ public partial class SubscriptionViewModel(
             previous = t.Entitlements.ToList();
         }
         Tiers.ReplaceWith(cards);
+        ApplyDiscounts();
     }
 
     private void UpdateStatus()
@@ -174,8 +259,8 @@ public partial class SubscriptionViewModel(
         // История платежей и автопродление есть только у подписок через свой сервер.
         CanManage = IsLoggedIn && !entitlements.UsesDiscord;
         SignInHint = entitlements.UsesDiscord
-            ? "Войдите через Discord в «Профиле» — тариф включится по вашей роли на сервере. Играть можно и без входа."
-            : "Войдите в аккаунт FrogLauncher в «Профиле», чтобы оформить подписку. Играть можно и без него.";
+            ? L.T("Войдите через Discord в «Профиле» — тариф включится по вашей роли на сервере. Играть можно и без входа.")
+            : L.T("Войдите в аккаунт FrogLauncher в «Профиле», чтобы оформить подписку. Играть можно и без него.");
         IsAdmin = entitlements.IsAdmin;
         VerificationFailed = entitlements.VerificationFailed;
         CurrentTierName = TierNames.Display(s.Tier);
@@ -190,15 +275,15 @@ public partial class SubscriptionViewModel(
         }));
         PeriodText = s switch
         {
-            { Tier: TierSlugs.Admin } => "Выдано администрацией · бессрочно",
-            _ when entitlements.NotGuildMember => "Вы не на нашем Discord-сервере — вступите, чтобы роль подтянулась",
-            { Tier: not TierSlugs.Tadpole } when entitlements.UsesDiscord => "Тариф по вашей роли на Discord-сервере",
-            { PeriodEnd: { } end, CancelAtPeriodEnd: true } => $"Автопродление отключено · доступ до {end.LocalDateTime:dd.MM.yyyy}",
-            { PeriodEnd: { } end } => $"Продлится {end.LocalDateTime:dd.MM.yyyy}",
-            _ => "Бесплатный тариф · игра доступна всегда",
+            { Tier: TierSlugs.Admin } => L.T("Выдано администрацией · бессрочно"),
+            _ when entitlements.NotGuildMember => L.T("Вы не на нашем Discord-сервере — вступите, чтобы роль подтянулась"),
+            { Tier: not TierSlugs.Tadpole } when entitlements.UsesDiscord => L.T("Тариф по вашей роли на Discord-сервере"),
+            { PeriodEnd: { } end, CancelAtPeriodEnd: true } => L.T($"Автопродление отключено · доступ до {end.LocalDateTime:dd.MM.yyyy}"),
+            { PeriodEnd: { } end } => L.T($"Продлится {end.LocalDateTime:dd.MM.yyyy}"),
+            _ => L.T("Бесплатный тариф · игра доступна всегда"),
         };
         GraceBanner = entitlements.GraceDaysLeft is { } d
-            ? $"Подписка истекла. Продлите. Осталось {d} {MainViewModel.Plural(d, "день", "дня", "дней")}."
+            ? L.T($"Подписка истекла. Продлите. Осталось {d} {MainViewModel.Plural(d, "день", "дня", "дней")}.")
             : null;
         CanCancel = s.Tier is not (TierSlugs.Tadpole or TierSlugs.Admin) && !s.CancelAtPeriodEnd;
     }
@@ -213,7 +298,7 @@ public partial class SubscriptionViewModel(
         {
             await entitlements.RefreshAsync();
             await LoadTiersAsync();
-            if (entitlements.VerificationFailed) toasts.Show("Не удалось проверить подписку — работаем по кэшу", ToastKind.Warning);
+            if (entitlements.VerificationFailed) toasts.Show(L.T("Не удалось проверить подписку — работаем по кэшу"), ToastKind.Warning);
         }
         finally
         {
@@ -233,20 +318,20 @@ public partial class SubscriptionViewModel(
 
         if (!session.IsLoggedIn)
         {
-            toasts.Show("Войдите в аккаунт FrogLauncher в «Профиле», чтобы оформить подписку", ToastKind.Info);
+            toasts.Show(L.T("Войдите в аккаунт FrogLauncher в «Профиле», чтобы оформить подписку"), ToastKind.Info);
             WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Profile));
             return;
         }
 
         try
         {
-            var r = await api.CheckoutAsync(card.Tier.Slug, IsYearly ? BillingPeriod.Year : BillingPeriod.Month, CancellationToken.None);
-            if (r.IsUpgrade && r.Amount > 0) toasts.Show($"Апгрейд: доплата за остаток периода — {r.Amount:0.##} ₽", ToastKind.Info, 6);
+            var r = await api.CheckoutAsync(card.Tier.Slug, IsYearly ? BillingPeriod.Year : BillingPeriod.Month, AppliedCode, CancellationToken.None);
+            if (r.IsUpgrade && r.Amount > 0) toasts.Show(L.T($"Апгрейд: доплата за остаток периода — {r.Amount:0.##} ₽"), ToastKind.Info, 6);
             Shell.Open(r.PaymentUrl);
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            toasts.Show(ex is ApiException ? ex.Message : "Сервер недоступен", ToastKind.Error, 6);
+            toasts.Show(ex is ApiException ? ex.Message : L.T("Сервер недоступен"), ToastKind.Error, 6);
         }
     }
 
@@ -256,18 +341,26 @@ public partial class SubscriptionViewModel(
     /// </summary>
     private void OpenDiscordTicket(TierCardViewModel card)
     {
-        var period = IsYearly ? "год" : "месяц";
-        var price = IsYearly ? card.Tier.PriceYear : card.Tier.PriceMonth;
+        // Текст заказа читают сотрудники в Discord — он всегда по-русски, на каком бы языке ни был лаунчер. noloc
+        var period = IsYearly ? "год" : "месяц"; // noloc
+        var promo = card.Discount switch
+        {
+            { Code: { } code } d => $"\nПромокод: {code} (−{d.Percent}%)" + (d.Partner is { } p ? $" · партнёр {p}" : ""), // noloc
+            { Source: "gift" } d => $"\nНовогодний подарок: −{d.Percent}% (дней в лаунчере: {newYear.Days(AppClock.Today)})", // noloc
+            { } d => $"\nАкция: {d.Label} (−{d.Percent}%)", // noloc
+            null => "",
+        };
+        var full = card.HasDiscount ? $" (без скидки {card.BasePrice:0} ₽)" : ""; // noloc
         var account = entitlements.SignedInName is { Length: > 0 } nick
-            ? (entitlements.UsesDiscord ? $"Discord: {nick}" : $"Аккаунт FrogLauncher: {nick}")
-            : (entitlements.UsesDiscord ? "Discord: пока не вошёл в лаунчере" : "Аккаунт FrogLauncher: не создан");
-        var order = $"🐸 Заказ FrogLauncher\n{account}\nИгровой ник: {accounts.Selected?.Name ?? "—"}\nТариф: {card.Name} ({period})\nСумма: {price:0} ₽";
+            ? (entitlements.UsesDiscord ? $"Discord: {nick}" : $"Аккаунт FrogLauncher: {nick}") // noloc
+            : (entitlements.UsesDiscord ? "Discord: пока не вошёл в лаунчере" : "Аккаунт FrogLauncher: не создан"); // noloc
+        var order = $"🐸 Заказ FrogLauncher\n{account}\nИгровой ник: {accounts.Selected?.Name ?? "—"}\nТариф: {card.Name} ({period}){promo}\nСумма: {card.FinalPrice:0} ₽{full}"; // noloc
         try { System.Windows.Clipboard.SetText(order); }
         catch (System.Runtime.InteropServices.COMException) { /* буфер занят другой программой — не критично */ }
 
         Shell.Open(DiscordUrl);
-        toasts.Show("Создайте тикет в канале покупки и вставьте заказ (Ctrl+V) — он уже скопирован. " +
-                    "После оплаты тариф включится автоматически.", ToastKind.Info, 9);
+        toasts.Show(L.T("Создайте тикет в канале покупки и вставьте заказ (Ctrl+V) — он уже скопирован. ") +
+                    L.T("После оплаты тариф включится автоматически."), ToastKind.Info, 9);
     }
 
     [RelayCommand]
@@ -284,7 +377,7 @@ public partial class SubscriptionViewModel(
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            toasts.Show("История платежей недоступна", ToastKind.Warning);
+            toasts.Show(L.T("История платежей недоступна"), ToastKind.Warning);
         }
     }
 
@@ -292,18 +385,18 @@ public partial class SubscriptionViewModel(
     private async Task CancelAutoRenewAsync()
     {
         var ok = System.Windows.MessageBox.Show(
-            "Отключить автопродление? Доступ к функциям сохранится до конца оплаченного периода.",
+            L.T("Отключить автопродление? Доступ к функциям сохранится до конца оплаченного периода."),
             "FrogLauncher", System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question);
         if (ok != System.Windows.MessageBoxResult.Yes) return;
         try
         {
             var r = await api.CancelAsync(CancellationToken.None);
-            toasts.Show(r.ActiveUntil is { } until ? $"Автопродление отключено. Доступ до {until.LocalDateTime:dd.MM.yyyy}" : "Подписка отменена", ToastKind.Info, 6);
+            toasts.Show(r.ActiveUntil is { } until ? L.T($"Автопродление отключено. Доступ до {until.LocalDateTime:dd.MM.yyyy}") : L.T("Подписка отменена"), ToastKind.Info, 6);
             await entitlements.RefreshAsync();
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
         {
-            toasts.Show(ex is ApiException ? ex.Message : "Сервер недоступен", ToastKind.Error);
+            toasts.Show(ex is ApiException ? ex.Message : L.T("Сервер недоступен"), ToastKind.Error);
         }
     }
 
@@ -316,13 +409,13 @@ public partial class SubscriptionViewModel(
     public async Task WaitForActivationAsync(string? subId)
     {
         var before = entitlements.Tier;
-        toasts.Show("Проверяем оплату…", ToastKind.Info, 3);
+        toasts.Show(L.T("Проверяем оплату…"), ToastKind.Info, 3);
         for (var i = 0; i < 20; i++)
         {
             await entitlements.RefreshAsync();
             if (entitlements.Tier != before || (entitlements.Current.PeriodEnd is { } end && end > DateTimeOffset.UtcNow.AddDays(25)))
             {
-                toasts.Show("Подписка активирована 🐸", ToastKind.Success, 6);
+                toasts.Show(L.T("Подписка активирована 🐸"), ToastKind.Success, 6);
                 UpdateStatus();
                 return;
             }
@@ -330,6 +423,6 @@ public partial class SubscriptionViewModel(
         }
 
         log.LogInformation("Подписка {SubId} пока не активна", subId);
-        toasts.Show("Оплата обрабатывается. Подписка включится автоматически в течение нескольких минут.", ToastKind.Info, 8);
+        toasts.Show(L.T("Оплата обрабатывается. Подписка включится автоматически в течение нескольких минут."), ToastKind.Info, 8);
     }
 }

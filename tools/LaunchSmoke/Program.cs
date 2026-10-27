@@ -1,10 +1,58 @@
 // Использование: LaunchSmoke <версия> <vanilla|fabric|quilt|forge|neoforge> [секунд_игры]
 // Ставит всё нужное, запускает игру оффлайн-ником FrogSmoke, ждёт загрузки и закрывает её.
+using System.IO;
+using System.Net.Http;
 using FrogLauncher.Core;
 using FrogLauncher.Models;
 using FrogLauncher.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+
+// LaunchSmoke ping <адрес>... — проверить серверы протоколом Server List Ping.
+if (args.ElementAtOrDefault(0) == "ping")
+{
+    var tasks = args.Skip(1).Select(async a => (a, await ServerPing.PingAsync(a, CancellationToken.None))).ToList();
+    foreach (var t in tasks)
+    {
+        var (addr, st) = await t;
+        Console.WriteLine(st.Online
+            ? $"OK   {addr,-28} {st.Players,7}/{st.MaxPlayers,-7} {st.PingMs,4} мс  {st.Version}  icon={(st.Icon is null ? "нет" : "есть")}  | {st.Motd.Replace("\n", " / ")}"
+            : $"FAIL {addr,-28} {st.Error}");
+    }
+    return 0;
+}
+
+// LaunchSmoke export <папка версии> <файл.mrpack|.zip> — экспорт сборки с настоящим API Modrinth (папка только читается).
+if (args.ElementAtOrDefault(0) == "export")
+{
+    var dir = args[1];
+    var src = System.Text.Json.JsonSerializer.Deserialize<Instance>(File.ReadAllText(Path.Combine(dir, "instance.json")), Json.Options)!;
+    src.Directory = dir;
+    var es = new ServiceCollection().AddLogging(b => b.AddSimpleConsole(o => o.SingleLine = true));
+    es.AddHttpClient(DownloadService.HttpClientName, c => c.DefaultRequestHeaders.UserAgent.ParseAdd("FrogLauncher-Smoke/1.0"));
+    var esp = es.BuildServiceProvider();
+    var transfer = new PackTransferService(esp.GetRequiredService<IHttpClientFactory>(), null!, null!,
+        esp.GetRequiredService<ILogger<PackTransferService>>());
+    var fmt = args[2].EndsWith(".mrpack") ? PackFormat.Mrpack : PackFormat.FullZip;
+    var r = await transfer.ExportAsync(src, new ExportOptions(fmt, false, true), args[2], new Progress<string>(Console.WriteLine), CancellationToken.None);
+    Console.WriteLine($"OK {r.Path}: ссылками {r.Linked}, внутри {r.Embedded}, offline={r.ModrinthOffline}, {new FileInfo(r.Path).Length / 1024} КБ");
+    return 0;
+}
+
+// LaunchSmoke adv [ru|en|…] — достижения во всех мирах установленных версий (миры только читаются).
+if (args.ElementAtOrDefault(0) == "adv")
+{
+    var ls = new ServiceCollection().AddLogging(b => b.AddSimpleConsole(o => o.SingleLine = true));
+    ls.AddSingleton(sp => new InstanceService(null!, sp.GetRequiredService<ILogger<InstanceService>>())).AddSingleton<AdvancementService>(); // List() не трогает тариф
+    var adv = ls.BuildServiceProvider().GetRequiredService<AdvancementService>();
+    foreach (var w in adv.Worlds())
+    {
+        var list = adv.Read(w, args.ElementAtOrDefault(1) ?? "ru");
+        Console.WriteLine($"{w.Instance.Name} / {w.Name} ({w.Instance.GameVersion}): {list.Count(a => a.IsDone)} из {list.Count}");
+        foreach (var a in list.Where(a => a.Done > 0).Take(6)) Console.WriteLine($"  {a.Title} — {a.Description} [{a.Done}/{a.Total}]");
+    }
+    return 0;
+}
 
 var version = args.ElementAtOrDefault(0) ?? "1.20.1";
 var loader = Enum.Parse<LoaderType>(args.ElementAtOrDefault(1) ?? "fabric", ignoreCase: true);

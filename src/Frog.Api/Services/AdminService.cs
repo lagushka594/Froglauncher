@@ -15,9 +15,22 @@ public sealed class AdminService(
     EntitlementService entitlements,
     JwtService jwt,
     TierCatalog tiers,
+    PromoCatalog promos,
     TimeProvider clock,
     ILogger<AdminService> log)
 {
+    public async Task<IReadOnlyList<PromoStatDto>> PromoStatsAsync(CancellationToken ct)
+    {
+        var rows = await db.Payments
+            .Where(p => p.Status == "succeeded" && p.Note != null && p.Note.StartsWith("promo:"))
+            .Select(p => new { p.Note, p.Amount })
+            .ToListAsync(ct);
+        return rows.GroupBy(r => r.Note!["promo:".Length..])
+            .Select(g => new PromoStatDto(g.Key, promos.Find(g.Key)?.Partner, g.Count(), g.Sum(r => r.Amount)))
+            .OrderByDescending(x => x.Payments)
+            .ToList();
+    }
+
     public const int MinReasonLength = 5;
 
     public async Task<PagedResult<AdminUserDto>> SearchUsersAsync(string? search, int page, int pageSize, CancellationToken ct)

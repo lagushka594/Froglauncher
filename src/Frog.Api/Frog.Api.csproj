@@ -23,6 +23,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Update="tiers.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\promos.json" Link="promos.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Frog.Api.Tests" />

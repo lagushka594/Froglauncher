@@ -41,7 +41,7 @@ public sealed class VersionService(IHttpClientFactory httpFactory, DownloadServi
             _manifest = JsonSerializer.Deserialize<VersionManifest>(await File.ReadAllTextAsync(cache, ct), Json.Mojang);
         }
 
-        return _manifest ?? throw new InvalidOperationException("Не удалось получить список версий");
+        return _manifest ?? throw new InvalidOperationException(L.T("Не удалось получить список версий"));
     }
 
     public async Task<IReadOnlyList<ManifestEntry>> ListAsync(VersionFilter filter, CancellationToken ct = default)
@@ -60,7 +60,7 @@ public sealed class VersionService(IHttpClientFactory httpFactory, DownloadServi
         if (!File.Exists(path))
         {
             var entry = (await GetManifestAsync(ct: ct)).Versions.FirstOrDefault(v => v.Id == id)
-                        ?? throw new InvalidOperationException($"Версия {id} не найдена в манифесте Mojang");
+                        ?? throw new InvalidOperationException(L.T($"Версия {id} не найдена в манифесте Mojang"));
             await downloads.DownloadFileAsync(new DownloadItem(entry.Url, path, entry.Sha1, 0), ct);
         }
 
@@ -71,7 +71,7 @@ public sealed class VersionService(IHttpClientFactory httpFactory, DownloadServi
     {
         await using var fs = File.OpenRead(LauncherPaths.VersionJson(id));
         return await JsonSerializer.DeserializeAsync<VersionInfo>(fs, Json.Mojang, ct)
-               ?? throw new InvalidDataException($"Повреждён {id}.json");
+               ?? throw new InvalidDataException(L.T($"Повреждён {id}.json"));
     }
 
     /// <summary>
@@ -116,7 +116,7 @@ public sealed class VersionService(IHttpClientFactory httpFactory, DownloadServi
     /// <summary>Полная установка: client.jar, библиотеки (+natives), ассеты, конфиг логирования.</summary>
     public async Task<VersionInfo> InstallAsync(string id, IProgress<DownloadProgress>? progress, CancellationToken ct)
     {
-        progress?.Report(DownloadProgress.Indeterminate("Получаем информацию о версии"));
+        progress?.Report(DownloadProgress.Indeterminate(L.T("Получаем информацию о версии")));
         var v = await ResolveAsync(id, ct);
         var jarId = v.Jar ?? v.Id;
 
@@ -129,7 +129,7 @@ public sealed class VersionService(IHttpClientFactory httpFactory, DownloadServi
         if (v.Logging?.Client?.File is { Url: not null } logCfg)
             items.Add(new DownloadItem(logCfg.Url, LoggingConfigPath(logCfg), logCfg.Sha1, logCfg.Size));
 
-        await downloads.DownloadAsync(items, "Клиент и библиотеки", progress, ct);
+        await downloads.DownloadAsync(items, L.T("Клиент и библиотеки"), progress, ct);
         await InstallAssetsAsync(v, progress, ct);
         return v;
     }
@@ -190,7 +190,7 @@ public sealed class VersionService(IHttpClientFactory httpFactory, DownloadServi
             .Select(o => new DownloadItem($"{ResourcesUrl}{o.Hash[..2]}/{o.Hash}",
                 Path.Combine(LauncherPaths.Assets, "objects", o.Hash[..2], o.Hash), o.Hash, o.Size, QuickCheck: true))
             .ToList();
-        await downloads.DownloadAsync(items, "Ассеты", progress, ct);
+        await downloads.DownloadAsync(items, L.T("Ассеты"), progress, ct);
 
         // Очень старые версии (до 1.7) читают ассеты по именам, а не по хэшам.
         if (index.Virtual || index.MapToResources)

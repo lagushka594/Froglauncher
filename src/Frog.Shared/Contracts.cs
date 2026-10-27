@@ -7,7 +7,10 @@ public sealed record RefreshRequest(string RefreshToken);
 public sealed record TokenPair(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = "Bearer");
 
 // ---- Биллинг ----
-public sealed record CheckoutRequest(string TierSlug, BillingPeriod Period, string? Provider = null);
+public sealed record CheckoutRequest(string TierSlug, BillingPeriod Period, string? Provider = null, string? PromoCode = null);
+
+/// <summary>Статистика промокода (для партнёров-стримеров): оплаченные платежи и выручка после скидки.</summary>
+public sealed record PromoStatDto(string Code, string? Partner, int Payments, decimal Revenue);
 public sealed record CheckoutResponse(string PaymentUrl, Guid SubscriptionId, decimal Amount, string Currency, bool IsUpgrade);
 public sealed record CancelResponse(DateTimeOffset? ActiveUntil);
 

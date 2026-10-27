@@ -21,7 +21,10 @@ namespace FrogLauncher.Installer
 
             if (silent)
             {
-                Shutdown(RunSilent(e.Args, uninstall, args.Contains("--purge")));
+                var code = RunSilent(e.Args, uninstall, args.Contains("--purge"));
+                // Автообновление: после тихой установки снова запускаем лаунчер.
+                if (code == 0 && !uninstall && args.Contains("--relaunch")) Relaunch(e.Args);
+                Shutdown(code);
                 return;
             }
 
@@ -38,6 +41,7 @@ namespace FrogLauncher.Installer
                     ? rawArgs[dirIndex + 1]
                     : SetupEngine.ExistingInstallDir() ?? SetupEngine.DefaultInstallDir;
 
+                WaitForLauncherExit();
                 if (uninstall) engine.Uninstall(dir, purge, (_, __) => { });
                 else engine.Install(dir, desktopShortcut: true, startMenuShortcut: true, (_, __) => { }, System.Threading.CancellationToken.None);
                 return 0;
@@ -47,6 +51,30 @@ namespace FrogLauncher.Installer
                 Console.Error.WriteLine(ex.Message);
                 return 1;
             }
+        }
+
+        /// <summary>Лаунчер сам закрывается перед обновлением — ждём до 20 с, затем завершаем принудительно.</summary>
+        private static void WaitForLauncherExit()
+        {
+            foreach (var p in SetupEngine.RunningLaunchers())
+            {
+                try
+                {
+                    if (!p.WaitForExit(20000)) p.Kill();
+                    p.WaitForExit(5000);
+                }
+                catch (InvalidOperationException) { }
+                catch (System.ComponentModel.Win32Exception) { }
+            }
+        }
+
+        private static void Relaunch(string[] rawArgs)
+        {
+            var dirIndex = Array.FindIndex(rawArgs, a => a.Equals("--dir", StringComparison.OrdinalIgnoreCase));
+            var dir = dirIndex >= 0 && dirIndex + 1 < rawArgs.Length ? rawArgs[dirIndex + 1] : SetupEngine.ExistingInstallDir() ?? SetupEngine.DefaultInstallDir;
+            var exe = System.IO.Path.Combine(dir, SetupEngine.ExeName);
+            if (System.IO.File.Exists(exe))
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = dir });
         }
     }
 }

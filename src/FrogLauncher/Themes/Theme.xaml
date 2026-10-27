@@ -67,7 +67,7 @@
     </Style>
 
     <!-- «Дышащая» лягушка-маскот. -->
-    <Style x:Key="Floating" TargetType="Image">
+    <Style x:Key="Floating" TargetType="FrameworkElement">
         <Setter Property="RenderTransform"><Setter.Value><TranslateTransform /></Setter.Value></Setter>
         <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality" />
         <Style.Triggers>
@@ -250,7 +250,7 @@
     <!-- Пункт бокового меню (RadioButton): картинка из атласа, выбранный — со свечением. -->
     <Style x:Key="NavItem" TargetType="RadioButton">
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="Margin" Value="0,4" />
+        <Setter Property="Margin" Value="0,3" />
         <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
         <Setter Property="RenderTransform"><Setter.Value><ScaleTransform /></Setter.Value></Setter>
         <Setter Property="Template">
@@ -401,12 +401,21 @@
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
                     <StackPanel Orientation="Horizontal" Background="Transparent">
-                        <Image x:Name="Img" Source="/Assets/ui/checkbox_off.png" Height="22" Margin="0,0,8,0" />
+                        <Border x:Name="Box" Width="20" Height="20" CornerRadius="5" Margin="0,0,8,0" BorderThickness="2"
+                                BorderBrush="{DynamicResource LineBrush}" Background="#0E1628">
+                            <Path x:Name="Mark" Data="M3,9 L7.5,13.5 L15,4" Stroke="#06210F" StrokeThickness="2.6" Visibility="Collapsed"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round" Margin="0,0,0,1" />
+                        </Border>
                         <ContentPresenter VerticalAlignment="Center" />
                     </StackPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Img" Property="Source" Value="/Assets/ui/checkbox_on.png" />
+                            <Setter TargetName="Box" Property="Background" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -483,7 +492,9 @@
                         </ToggleButton>
                         <ContentPresenter Margin="12,0,32,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                           Content="{TemplateBinding SelectionBoxItem}"
-                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
                         <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
                                AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
                             <Border Background="{DynamicResource PanelSolidBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
@@ -547,6 +558,52 @@
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Effect">
             <Setter.Value><DropShadowEffect Color="#7C3AED" BlurRadius="12" ShadowDepth="0" Opacity="0.9" /></Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Вкладки настроек версии. -->
+    <Style x:Key="SettingsTabs" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0,10,0,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1">
+                            <WrapPanel IsItemsHost="True" />
+                        </Border>
+                        <ContentPresenter ContentSource="SelectedContent" Margin="{TemplateBinding Padding}" />
+                    </DockPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="TabItem">
+                    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+                    <Setter Property="Cursor" Value="Hand" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabItem">
+                                <Border x:Name="Bd" Padding="12,7" Margin="0,0,4,0" Background="Transparent" BorderThickness="0,0,0,2" BorderBrush="Transparent">
+                                    <ContentPresenter ContentSource="Header" TextElement.FontWeight="SemiBold" TextElement.FontSize="13" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                        <Setter TargetName="Bd" Property="Background" Value="#1A22C55E" />
+                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
         </Setter>
     </Style>
 

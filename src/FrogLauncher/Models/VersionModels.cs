@@ -1,3 +1,4 @@
+using FrogLauncher.Core;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -154,7 +155,7 @@ public sealed class OsRule
 }
 
 /// <summary>Флаги запуска, влияющие на правила аргументов.</summary>
-public sealed record LaunchFeatures(bool IsDemoUser, bool HasCustomResolution);
+public sealed record LaunchFeatures(bool IsDemoUser, bool HasCustomResolution, bool QuickPlayMultiplayer = false);
 
 public static class Rules
 {
@@ -193,6 +194,7 @@ public static class Rules
                 {
                     "is_demo_user" => f?.IsDemoUser ?? false,
                     "has_custom_resolution" => f?.HasCustomResolution ?? false,
+                    "is_quick_play_multiplayer" => f?.QuickPlayMultiplayer ?? false,
                     _ => false, // quick play, has_quick_plays_support и т.п. не поддерживаем
                 };
                 if (actual != value) return false;
@@ -219,7 +221,7 @@ public static class Maven
         }
 
         var parts = coordinate.Split(':');
-        if (parts.Length < 3) throw new FormatException($"Некорректная maven-координата: {coordinate}");
+        if (parts.Length < 3) throw new FormatException(L.T($"Некорректная maven-координата: {coordinate}"));
         var (group, artifact, version) = (parts[0].Replace('.', '/'), parts[1], parts[2]);
         var classifier = parts.Length > 3 ? "-" + parts[3] : "";
         return $"{group}/{artifact}/{version}/{artifact}-{version}{classifier}.{ext}";

@@ -8,11 +8,18 @@
 #>
 param(
     [string] $Configuration = "Release",
+    # Номер релиза (без «v»): 2.1.0, 2.2.0-beta.1. По умолчанию — из Directory.Build.props.
+    [string] $Version,
     [switch] $CutAssets,
     [switch] $SkipApi
 )
 
 $ErrorActionPreference = "Stop"
+$versionArgs = @()
+if ($Version) {
+    $numeric = ($Version -split '-')[0]
+    $versionArgs = @("-p:Version=$Version", "-p:AssemblyVersion=$numeric.0", "-p:FileVersion=$numeric.0", "-p:InformationalVersion=$Version")
+}
 $root = Split-Path $PSScriptRoot -Parent
 $out = Join-Path $root "artifacts"
 $launcherOut = Join-Path $out "launcher"
@@ -33,7 +40,7 @@ if ($CutAssets) {
 Step "Publish лаунчера (win-x64, self-contained, single-file)"
 Exec { dotnet publish "$root\src\FrogLauncher\FrogLauncher.csproj" -c $Configuration -r win-x64 --self-contained true `
         -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true `
-        -p:DebugType=none -o $launcherOut }
+        -p:DebugType=none @versionArgs -o $launcherOut }
 
 Step "Упаковка payload.zip"
 if (Test-Path $payload) { Remove-Item $payload -Force }
@@ -50,7 +57,7 @@ Copy-Item (Join-Path $uninstTmp "FrogLauncherSetup.exe") (Join-Path $payloadDir 
 Remove-Item $uninstTmp -Recurse -Force
 
 Step "Сборка установщика"
-Exec { dotnet build $installerProj -c $Configuration -p:DebugType=none --no-incremental }
+Exec { dotnet build $installerProj -c $Configuration -p:DebugType=none --no-incremental @versionArgs }
 $setup = Join-Path $root "src\FrogLauncher.Installer\bin\$Configuration\net48\FrogLauncherSetup.exe"
 Copy-Item $setup (Join-Path $out "FrogLauncherSetup.exe")
 
@@ -70,3 +77,4 @@ Get-ChildItem $out -File | ForEach-Object {
     "{0,-24} {1,8:N1} МБ  sha256 {2}" -f $_.Name, ($_.Length / 1MB), $hash
 }
 Write-Host "`nУстановщик: $out\FrogLauncherSetup.exe" -ForegroundColor Cyan
+Write-Host "Релиз для автообновления: GitHub → Releases → Draft a new release → тег v$(if ($Version) { $Version } else { '<версия>' }) → прикрепите FrogLauncherSetup.exe (имя файла — ровно такое)." -ForegroundColor Cyan

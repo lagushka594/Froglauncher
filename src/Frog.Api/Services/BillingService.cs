@@ -20,6 +20,7 @@ public sealed class BillingException(string message, int statusCode = 400) : Exc
 public sealed class BillingService(
     FrogDbContext db,
     TierCatalog tiers,
+    PromoCatalog promos,
     PaymentProviderRegistry providers,
     EntitlementService entitlements,
     IOptions<BillingOptions> options,
@@ -43,6 +44,13 @@ public sealed class BillingService(
         var tier = tiers.Get(req.TierSlug)!;
         var price = tiers.PriceFor(req.TierSlug, req.Period);
         var now = clock.GetUtcNow();
+
+        // Неверный код — явная ошибка, а не тихая оплата без скидки.
+        if (req.PromoCode is { Length: > 0 } code &&
+            promos.Check(code, req.TierSlug, req.Period, now, out _) is var check and not PromoCheck.Ok)
+            throw new BillingException(PromoCatalog.Explain(check));
+        var discount = promos.Best(req.TierSlug, req.Period, req.PromoCode, now);
+        if (discount is not null) price = discount.Apply(price);
 
         var current = (await db.Subscriptions
                 .Where(s => s.UserId == userId && Live.Contains(s.Status))
@@ -108,6 +116,12 @@ public sealed class BillingService(
             Status = "pending",
             Kind = kind,
             CreatedAt = now,
+            Note = discount switch
+            {
+                { Code: { } c } => "promo:" + c,
+                { } d => d.Source,
+                null => null,
+            },
         };
 
         db.Subscriptions.Add(sub);

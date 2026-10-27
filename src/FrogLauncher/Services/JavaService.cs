@@ -52,7 +52,7 @@ public sealed partial class JavaService(IHttpClientFactory httpFactory, Download
             using var hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, hive);
             foreach (var root in RegistryRoots)
                 foreach (var home in ScanRegistry(hklm.OpenSubKey(root), 0))
-                    Add(home, "реестр");
+                    Add(home, L.T("реестр"));
         }
 
         Add(Environment.GetEnvironmentVariable("JAVA_HOME"), "JAVA_HOME");
@@ -120,7 +120,7 @@ public sealed partial class JavaService(IHttpClientFactory httpFactory, Download
     /// <summary>Скачивание JRE Eclipse Temurin с проверкой SHA-256 и распаковкой с прогрессом.</summary>
     public async Task DownloadTemurinAsync(int major, IProgress<DownloadProgress>? progress, CancellationToken ct)
     {
-        progress?.Report(DownloadProgress.Indeterminate($"Ищем Java {major}"));
+        progress?.Report(DownloadProgress.Indeterminate(L.T($"Ищем Java {major}")));
         var http = httpFactory.CreateClient(DownloadService.HttpClientName);
         var arch = Rules.IsArm64 ? "aarch64" : Rules.IsX86 ? "x32" : "x64";
         var url = $"https://api.adoptium.net/v3/assets/latest/{major}/hotspot?architecture={arch}&image_type=jre&os=windows&vendor=eclipse";
@@ -130,7 +130,7 @@ public sealed partial class JavaService(IHttpClientFactory httpFactory, Download
             .Select(a => a.GetProperty("binary").GetProperty("package"))
             .FirstOrDefault(p => p.GetProperty("name").GetString()!.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
         if (pkg.ValueKind == JsonValueKind.Undefined)
-            throw new InvalidOperationException($"Adoptium не отдал zip для Java {major}");
+            throw new InvalidOperationException(L.T($"Adoptium не отдал zip для Java {major}"));
 
         var zipPath = Path.Combine(LauncherPaths.Cache, pkg.GetProperty("name").GetString()!);
         await downloads.DownloadAsync(new[]
@@ -166,7 +166,7 @@ public sealed partial class JavaService(IHttpClientFactory httpFactory, Download
                     entry.ExtractToFile(dst, overwrite: true);
                 }
 
-                if (i % 50 == 0) progress?.Report(new DownloadProgress($"Распаковка Java {major}", i, total, 0, 0, 0));
+                if (i % 50 == 0) progress?.Report(new DownloadProgress(L.T($"Распаковка Java {major}"), i, total, 0, 0, 0));
             }
         }, ct);
 

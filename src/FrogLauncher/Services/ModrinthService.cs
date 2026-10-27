@@ -1,3 +1,4 @@
+using FrogLauncher.Core;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json.Nodes;
@@ -82,7 +83,7 @@ public sealed class ModrinthService(IHttpClientFactory httpFactory, DownloadServ
         if (version is null)
         {
             if (isDependency) { log.LogWarning("Зависимость {Project} недоступна для {Version}", projectId, inst.GameVersion); return; }
-            throw new ModsException($"У этого мода нет сборки для {inst.GameVersion} · {inst.Loader}");
+            throw new ModsException(L.T($"У этого мода нет сборки для {inst.GameVersion} · {inst.Loader}"));
         }
 
         var files = version["files"]!.AsArray();
@@ -123,12 +124,13 @@ public sealed class ModrinthService(IHttpClientFactory httpFactory, DownloadServ
     {
         var path = Path.Combine(inst.GameDirectory, "mods", Path.GetFileName(fileName));
         if (File.Exists(path)) File.Delete(path);
-        inst.InstalledMods.RemoveAll(m => m.FileName == fileName);
+        var jar = fileName.EndsWith(".disabled", StringComparison.Ordinal) ? fileName[..^".disabled".Length] : fileName;
+        inst.InstalledMods.RemoveAll(m => m.FileName == jar);
     }
 
     private static void RequireLoader(Instance inst)
     {
         if (inst.Loader == LoaderType.Vanilla)
-            throw new ModsException("Для модов нужна версия с модлоадером: создайте версию с Fabric, Quilt, Forge или NeoForge.");
+            throw new ModsException(L.T("Для модов нужна версия с модлоадером: создайте версию с Fabric, Quilt, Forge или NeoForge."));
     }
 }

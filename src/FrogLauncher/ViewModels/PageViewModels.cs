@@ -20,9 +20,34 @@ public partial class InstancesViewModel(
     EntitlementService entitlements,
     SettingsService settings,
     ModrinthService modrinth,
+    JavaService java,
     ToastService toasts,
-    ILogger<InstancesViewModel> log) : ObservableObject, IPageActivated
+    WorldService worlds,
+    LaunchService launcher,
+    PackTransferService transfer,
+    ILogger<InstancesViewModel> log) : ObservableObject, IPageActivated, IRefreshable
 {
+    /// <summary>F5: заново скачать список версий Mojang и перечитать инстансы.</summary>
+    public async Task RefreshPageAsync()
+    {
+        try
+        {
+            _all = (await versions.GetManifestAsync(force: true)).Versions;
+            ApplyFilter();
+            toasts.Show(L.T("Список версий обновлён"), ToastKind.Success, 2);
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or InvalidOperationException)
+        {
+            toasts.Show(L.T("Не удалось обновить список версий"), ToastKind.Error);
+        }
+        // Перезаполнение списка сбрасывает выбор — восстанавливаем выбранную версию.
+        var selectedId = Selected?.Id;
+        Instances.ReplaceWith(instances.List());
+        Selected = Instances.FirstOrDefault(i => i.Id == selectedId) ?? Instances.FirstOrDefault();
+    }
+
+    /// <summary>Экран «Настройки версии» (вкладки) для выбранной версии.</summary>
+    [ObservableProperty] private InstanceSettingsViewModel? _settingsPanel;
     private IReadOnlyList<ManifestEntry> _all = Array.Empty<ManifestEntry>();
 
     public ObservableCollection<Instance> Instances { get; } = new();
@@ -50,8 +75,8 @@ public partial class InstancesViewModel(
         Instances.ReplaceWith(instances.List());
         Selected ??= Instances.FirstOrDefault();
         LimitText = entitlements.MaxInstances is { } max
-            ? $"{Instances.Count} из {max} · {TierNames.Display(entitlements.Tier)}"
-            : $"{Instances.Count} · без ограничений";
+            ? L.T($"{Instances.Count} из {max} · {TierNames.Display(entitlements.Tier)}")
+            : L.T($"{Instances.Count} · без ограничений");
         OnPropertyChanged(nameof(CanAutotune));
 
         if (_all.Count == 0)
@@ -63,7 +88,7 @@ public partial class InstancesViewModel(
             }
             catch (Exception ex)
             {
-                toasts.Show("Не удалось загрузить список версий: " + ex.Message, ToastKind.Error);
+                toasts.Show(L.T("Не удалось загрузить список версий: ") + ex.Message, ToastKind.Error);
             }
         }
     }
@@ -93,12 +118,12 @@ public partial class InstancesViewModel(
             var list = await loaders.GetVersionsAsync(NewLoader, NewVersion.Id, CancellationToken.None);
             LoaderVersions.ReplaceWith(list);
             NewLoaderVersion = list.FirstOrDefault(l => l.Recommended) ?? list.FirstOrDefault();
-            if (list.Count == 0) toasts.Show($"{NewLoader} не поддерживает {NewVersion.Id}", ToastKind.Warning);
+            if (list.Count == 0) toasts.Show(L.T($"{NewLoader} не поддерживает {NewVersion.Id}"), ToastKind.Warning);
         }
         catch (Exception ex)
         {
             log.LogWarning(ex, "Список версий {Loader}", NewLoader);
-            toasts.Show($"{NewLoader}: не удалось получить версии", ToastKind.Error);
+            toasts.Show(L.T($"{NewLoader}: не удалось получить версии"), ToastKind.Error);
         }
         finally
         {
@@ -124,6 +149,97 @@ public partial class InstancesViewModel(
     [RelayCommand]
     private void CancelCreate() => IsCreating = false;
 
+    // ---------- Импорт сборок и миров ----------
+    public ProgressState ImportProgress { get; } = new();
+    [ObservableProperty] private bool _isImporting;
+
+    [RelayCommand]
+    private async Task ImportPackAsync()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = L.T("Сборки и миры|*.mrpack;*.zip|Все файлы|*.*"),
+            Multiselect = true,
+        };
+        if (dlg.ShowDialog() != true) return;
+        foreach (var f in dlg.FileNames) await ImportFileAsync(f);
+    }
+
+    /// <summary>Файл из диалога или перетащенный на «Каталог»: сборка → новая версия, мир → в выбранную версию.</summary>
+    public async Task ImportFileAsync(string path)
+    {
+        if (IsImporting) return;
+        if (PackTransferService.Detect(path) == ImportKind.World)
+        {
+            if (Selected is not { } target)
+            {
+                toasts.Show(L.T("Это мир — сначала выберите версию, в которую его добавить"), ToastKind.Info);
+                return;
+            }
+            if (MessageBox.Show(L.T($"«{System.IO.Path.GetFileName(path)}» — это мир Minecraft. Добавить его в «{target.Name}»?"), "FrogLauncher",
+                    MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+            try
+            {
+                var folder = await Task.Run(() => worlds.Import(target, path));
+                toasts.Show(L.T($"Мир «{folder}» добавлен в «{target.Name}» 🌍"), ToastKind.Success);
+                if (SettingsPanel is { } panel && panel.Instance.Id == target.Id) await panel.Worlds.LoadAsync();
+            }
+            catch (Exception ex) when (ex is System.IO.IOException or System.IO.InvalidDataException or ModsException or UnauthorizedAccessException)
+            {
+                toasts.Show(L.T("Не удалось импортировать мир: ") + ex.Message, ToastKind.Error, 7);
+            }
+            return;
+        }
+
+        IsImporting = true;
+        try
+        {
+            var progress = new Progress<DownloadProgress>(ImportProgress.Apply);
+            ImportProgress.Apply(DownloadProgress.Indeterminate(L.T("Импортируем сборку")));
+            var inst = await transfer.ImportAsync(path, settings.Current.DefaultRamMb, progress, CancellationToken.None);
+            await OnActivatedAsync();
+            Selected = Instances.FirstOrDefault(i => i.Id == inst.Id) ?? Selected;
+            toasts.Show(L.T($"Сборка «{inst.Name}» импортирована ({inst.DisplayVersion}). Жмите «Играть» на главной 🐸"), ToastKind.Success, 7);
+        }
+        catch (InstanceLimitException ex)
+        {
+            Upsell = ex.Message;
+        }
+        catch (Exception ex) when (ex is ModsException or System.IO.IOException or System.IO.InvalidDataException or System.Net.Http.HttpRequestException
+                                       or System.Text.Json.JsonException or UnauthorizedAccessException)
+        {
+            log.LogWarning(ex, "Импорт {File} не удался", path);
+            toasts.Show(L.T("Импорт не удался: ") + ex.Message, ToastKind.Error, 9);
+        }
+        finally
+        {
+            IsImporting = false;
+            ImportProgress.Reset();
+        }
+    }
+
+    // ---------- Для командной палитры ----------
+    public void SelectById(string id) => Selected = Instances.FirstOrDefault(i => i.Id == id) ?? Selected;
+
+    /// <summary>Открыть форму создания сразу с выбранной версией Minecraft.</summary>
+    public void StartCreateWith(ManifestEntry version)
+    {
+        StartCreate();
+        if (!IsCreating) return;
+        if (version.Type == "snapshot") ShowSnapshot = true;
+        else if (version.Type != "release") ShowOld = true;
+        NewVersion = Versions.FirstOrDefault(v => v.Id == version.Id) ?? NewVersion;
+    }
+
+    public void OpenModSearch(string instanceId, string query)
+    {
+        SelectById(instanceId);
+        if (!SelectedHasLoader) return;
+        ShowModCatalog = true;
+        ModQuery = query;
+        _ = SearchModsAsync();
+    }
+
     [RelayCommand]
     private async Task CreateAsync()
     {
@@ -135,7 +251,7 @@ public partial class InstancesViewModel(
             IsCreating = false;
             await OnActivatedAsync();
             Selected = Instances.FirstOrDefault(i => i.Id == inst.Id);
-            toasts.Show($"Версия «{inst.Name}» добавлена. Жмите «Играть» на главной 🐸", ToastKind.Success);
+            toasts.Show(L.T($"Версия «{inst.Name}» добавлена. Жмите «Играть» на главной 🐸"), ToastKind.Success);
         }
         catch (InstanceLimitException ex)
         {
@@ -152,14 +268,14 @@ public partial class InstancesViewModel(
     {
         if (Selected is null) return;
         instances.Save(Selected);
-        toasts.Show("Настройки версии сохранены", ToastKind.Success);
+        toasts.Show(L.T("Настройки версии сохранены"), ToastKind.Success);
     }
 
     [RelayCommand]
     private async Task DeleteAsync()
     {
         if (Selected is null) return;
-        var r = MessageBox.Show($"Удалить «{Selected.Name}» вместе с мирами и модами?", "FrogLauncher",
+        var r = MessageBox.Show(L.T($"Удалить «{Selected.Name}» вместе с мирами и модами?"), "FrogLauncher",
             MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (r != MessageBoxResult.Yes) return;
         instances.Delete(Selected);
@@ -179,7 +295,7 @@ public partial class InstancesViewModel(
     private void PickJava()
     {
         if (Selected is null) return;
-        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Java (javaw.exe;java.exe)|javaw.exe;java.exe", Title = "Выберите Java" };
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Java (javaw.exe;java.exe)|javaw.exe;java.exe", Title = L.T("Выберите Java") };
         if (dlg.ShowDialog() == true)
         {
             Selected.JavaPath = dlg.FileName;
@@ -217,6 +333,8 @@ public partial class InstancesViewModel(
 
     partial void OnSelectedChanged(Instance? value)
     {
+        SettingsPanel = value is null ? null : new InstanceSettingsViewModel(value, instances, java, entitlements, toasts,
+            new WorldsViewModel(value, worlds, launcher, toasts), transfer);
         ShowModCatalog = false;
         ModResults.Clear();
         OnPropertyChanged(nameof(SelectedHasLoader));
@@ -230,12 +348,15 @@ public partial class InstancesViewModel(
         if (Selected is not { } inst) return;
         var dir = System.IO.Path.Combine(inst.GameDirectory, "mods");
         if (!System.IO.Directory.Exists(dir)) return;
-        foreach (var file in System.IO.Directory.GetFiles(dir, "*.jar").Select(System.IO.Path.GetFileName).OfType<string>().Order())
+        var files = System.IO.Directory.GetFiles(dir, "*.jar").Concat(System.IO.Directory.GetFiles(dir, "*.jar.disabled"));
+        foreach (var file in files.Select(System.IO.Path.GetFileName).OfType<string>().Order())
         {
-            var meta = inst.InstalledMods.FirstOrDefault(m => m.FileName == file);
-            ModFiles.Add(new ModFileItem(file, meta?.Title ?? file, meta?.IconUrl, meta?.IsDependency == true));
+            var enabled = !file.EndsWith(".disabled", StringComparison.Ordinal);
+            var jar = enabled ? file : file[..^".disabled".Length];
+            var meta = inst.InstalledMods.FirstOrDefault(m => m.FileName == jar);
+            ModFiles.Add(new ModFileItem(file, meta?.Title ?? jar, meta?.IconUrl, meta?.IsDependency == true, enabled));
         }
-        ModsHint = ModFiles.Count == 0 ? "Модов пока нет — найдите их в каталоге." : null;
+        ModsHint = ModFiles.Count == 0 ? L.T("Модов пока нет — найдите их в каталоге.") : null;
     }
 
     [RelayCommand]
@@ -243,7 +364,7 @@ public partial class InstancesViewModel(
     {
         if (!SelectedHasLoader)
         {
-            toasts.Show("Для модов нужна версия с модлоадером (Fabric, Quilt, Forge, NeoForge)", ToastKind.Info, 6);
+            toasts.Show(L.T("Для модов нужна версия с модлоадером (Fabric, Quilt, Forge, NeoForge)"), ToastKind.Info, 6);
             return;
         }
         ShowModCatalog = !ShowModCatalog;
@@ -259,11 +380,11 @@ public partial class InstancesViewModel(
         {
             var hits = await modrinth.SearchAsync(inst, ModQuery, 0, CancellationToken.None);
             ModResults.ReplaceWith(hits.Select(h => new ModHitItem(h, inst.InstalledMods.Any(m => m.ProjectId == h.ProjectId))));
-            if (hits.Count == 0) toasts.Show($"Ничего не нашлось для {inst.GameVersion} · {inst.Loader}", ToastKind.Info);
+            if (hits.Count == 0) toasts.Show(L.T($"Ничего не нашлось для {inst.GameVersion} · {inst.Loader}"), ToastKind.Info);
         }
         catch (Exception ex) when (ex is ModsException or System.Net.Http.HttpRequestException or TaskCanceledException)
         {
-            toasts.Show(ex is ModsException ? ex.Message : "Modrinth недоступен, попробуйте позже", ToastKind.Error);
+            toasts.Show(ex is ModsException ? ex.Message : L.T("Modrinth недоступен, попробуйте позже"), ToastKind.Error);
         }
         finally
         {
@@ -284,17 +405,30 @@ public partial class InstancesViewModel(
             foreach (var r in ModResults.Where(r => added.Any(a => a.ProjectId == r.Hit.ProjectId))) r.IsInstalled = true;
             RefreshModFiles();
             var deps = added.Count(a => a.IsDependency);
-            toasts.Show(deps > 0 ? $"«{item.Hit.Title}» установлен + {deps} зависимост(и) 🐸" : $"«{item.Hit.Title}» установлен 🐸", ToastKind.Success);
+            toasts.Show(deps > 0 ? L.T($"«{item.Hit.Title}» установлен + {deps} зависимост(и) 🐸") : L.T($"«{item.Hit.Title}» установлен 🐸"), ToastKind.Success);
         }
         catch (Exception ex) when (ex is ModsException or System.Net.Http.HttpRequestException or System.IO.IOException)
         {
             log.LogWarning(ex, "Установка мода {Project}", item.Hit.ProjectId);
-            toasts.Show(ex is ModsException ? ex.Message : "Не удалось скачать мод: " + ex.Message, ToastKind.Error, 6);
+            toasts.Show(ex is ModsException ? ex.Message : L.T("Не удалось скачать мод: ") + ex.Message, ToastKind.Error, 6);
         }
         finally
         {
             item.IsInstalling = false;
         }
+    }
+
+    /// <summary>Выключить мод, не удаляя: name.jar ↔ name.jar.disabled (Minecraft грузит только .jar).</summary>
+    [RelayCommand]
+    private void ToggleMod(ModFileItem? mod)
+    {
+        if (mod is null || Selected is not { } inst) return;
+        var dir = System.IO.Path.Combine(inst.GameDirectory, "mods");
+        var src = System.IO.Path.Combine(dir, mod.FileName);
+        var dst = mod.Enabled ? src + ".disabled" : src[..^".disabled".Length];
+        if (System.IO.File.Exists(src) && !System.IO.File.Exists(dst)) System.IO.File.Move(src, dst);
+        instances.Save(inst);
+        RefreshModFiles();
     }
 
     [RelayCommand]
@@ -318,25 +452,27 @@ public partial class InstancesViewModel(
 }
 
 /// <summary>Файл мода в папке mods.</summary>
-public sealed record ModFileItem(string FileName, string Title, string? IconUrl, bool IsDependency)
+public sealed record ModFileItem(string FileName, string Title, string? IconUrl, bool IsDependency, bool Enabled = true)
 {
-    public string Subtitle => IsDependency ? "зависимость · " + FileName : FileName;
+    public string Subtitle => (Enabled ? "" : L.T("выключен · ")) + (IsDependency ? L.T("зависимость · ") : "") + FileName;
 }
 
 /// <summary>Результат поиска в каталоге модов.</summary>
 public partial class ModHitItem(ModHit hit, bool installed) : ObservableObject
 {
     public ModHit Hit { get; } = hit;
-    public string DownloadsText => Hit.Downloads >= 1_000_000 ? $"{Hit.Downloads / 1_000_000.0:0.#} млн загрузок"
-        : Hit.Downloads >= 1000 ? $"{Hit.Downloads / 1000.0:0.#} тыс. загрузок" : $"{Hit.Downloads} загрузок";
+    public string DownloadsText => Hit.Downloads >= 1_000_000 ? L.T($"{Hit.Downloads / 1_000_000.0:0.#} млн загрузок")
+        : Hit.Downloads >= 1000 ? L.T($"{Hit.Downloads / 1000.0:0.#} тыс. загрузок") : L.T($"{Hit.Downloads} загрузок");
 
     [ObservableProperty] private bool _isInstalled = installed;
     [ObservableProperty] private bool _isInstalling;
 }
 
 /// <summary>«Java»: найденные рантаймы и загрузка Temurin 8/17/21.</summary>
-public partial class JavaViewModel(JavaService java, DiscordPresenceService presence, ToastService toasts) : ObservableObject, IPageActivated
+public partial class JavaViewModel(JavaService java, DiscordPresenceService presence, ToastService toasts) : ObservableObject, IPageActivated, IRefreshable
 {
+    public Task RefreshPageAsync() => RefreshAsync();
+
     public ObservableCollection<JavaRuntime> Runtimes { get; } = new();
     public ProgressState Progress { get; } = new();
 
@@ -358,9 +494,9 @@ public partial class JavaViewModel(JavaService java, DiscordPresenceService pres
         var m = int.Parse(major);
         try
         {
-            await presence.SetAsync(new PresenceState("В лаунчере", $"Устанавливает Java {m}", SmallImage: "java", SmallText: "Java"));
+            await presence.SetAsync(new PresenceState(L.T("В лаунчере"), L.T($"Устанавливает Java {m}"), SmallImage: "java", SmallText: "Java"));
             await java.DownloadTemurinAsync(m, new Progress<DownloadProgress>(Progress.Apply), CancellationToken.None);
-            toasts.Show($"Java {m} установлена ☕", ToastKind.Success);
+            toasts.Show(L.T($"Java {m} установлена ☕"), ToastKind.Success);
             await RefreshAsync();
         }
         catch (Exception ex)
@@ -383,8 +519,24 @@ public partial class ProfileViewModel(
     SessionStore session,
     EntitlementService entitlements,
     DiscordAuthService discord,
-    ToastService toasts) : ObservableObject, IPageActivated
+    ToastService toasts,
+    StatsViewModel stats,
+    ScreenshotsViewModel screenshots) : ObservableObject, IPageActivated
 {
+    public StatsViewModel Stats { get; } = stats;
+    public ScreenshotsViewModel Screenshots { get; } = screenshots;
+
+    /// <summary>0 — аккаунты, 1 — статистика, 2 — скриншоты (грузятся при открытии вкладки).</summary>
+    [ObservableProperty] private int _tab;
+
+    partial void OnTabChanged(int value) => LoadTab();
+
+    private void LoadTab()
+    {
+        if (Tab == 1) Stats.Load();
+        else if (Tab == 2) _ = Screenshots.LoadAsync();
+    }
+
     private CancellationTokenSource? _msCts;
     private CancellationTokenSource? _discordCts;
 
@@ -425,8 +577,9 @@ public partial class ProfileViewModel(
         DiscordName = discord.Current?.DisplayName ?? "";
         DiscordAvatar = discord.Current?.AvatarUrl;
         DiscordHint = entitlements.NotGuildMember
-            ? "Вы не состоите на нашем Discord-сервере — вступите, чтобы тариф по роли включился."
+            ? L.T("Вы не состоите на нашем Discord-сервере — вступите, чтобы тариф по роли включился.")
             : null;
+        LoadTab();
         return Task.CompletedTask;
     }
 
@@ -441,7 +594,7 @@ public partial class ProfileViewModel(
             var s = await discord.LoginAsync(_discordCts.Token);
             await entitlements.RefreshAsync();
             await OnActivatedAsync();
-            toasts.Show($"Discord подключён: {s.DisplayName}. Тариф: {TierNames.Display(entitlements.Tier)} 🐸", ToastKind.Success, 6);
+            toasts.Show(L.T($"Discord подключён: {s.DisplayName}. Тариф: {TierNames.Display(entitlements.Tier)} 🐸"), ToastKind.Success, 6);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is DiscordAuthException or System.Net.Http.HttpRequestException)
@@ -477,7 +630,7 @@ public partial class ProfileViewModel(
             accounts.AddOffline(OfflineNick);
             OfflineNick = "";
             await OnActivatedAsync();
-            toasts.Show("Оффлайн-аккаунт добавлен", ToastKind.Success);
+            toasts.Show(L.T("Оффлайн-аккаунт добавлен"), ToastKind.Success);
         }
         catch (GameAuthException ex)
         {
@@ -497,7 +650,7 @@ public partial class ProfileViewModel(
             Clipboard.SetText(DeviceCode.UserCode);
             Shell.Open(DeviceCode.VerificationUri);
             var acc = await accounts.CompleteMicrosoftLoginAsync(DeviceCode, _msCts.Token);
-            toasts.Show($"Вошли как {acc.Name} 🐸", ToastKind.Success);
+            toasts.Show(L.T($"Вошли как {acc.Name} 🐸"), ToastKind.Success);
             await OnActivatedAsync();
         }
         catch (OperationCanceledException) { }
@@ -547,11 +700,11 @@ public partial class ProfileViewModel(
             if (passwordSource is System.Windows.Controls.PasswordBox pb) pb.Clear();
             await entitlements.RefreshAsync();
             await OnActivatedAsync();
-            toasts.Show("Аккаунт FrogLauncher подключён", ToastKind.Success);
+            toasts.Show(L.T("Аккаунт FrogLauncher подключён"), ToastKind.Success);
         }
         catch (Exception ex) when (ex is ApiException or System.Net.Http.HttpRequestException)
         {
-            toasts.Show(ex is ApiException ? ex.Message : "Сервер недоступен", ToastKind.Error);
+            toasts.Show(ex is ApiException ? ex.Message : L.T("Сервер недоступен"), ToastKind.Error);
         }
     }
 
@@ -569,9 +722,130 @@ public partial class SettingsViewModel(
     ThemeService themes,
     EntitlementService entitlements,
     DiscordPresenceService presence,
+    UpdateService updates,
+    HotkeyService hotkeys,
     ToastService toasts) : ObservableObject, IPageActivated
 {
+    // ---------- Обновления ----------
+    public string CurrentVersion => UpdateService.CurrentVersion;
+    public bool CanUseBeta => updates.CanUseBeta;
+    public bool IsInstalledCopy => UpdateService.IsInstalledCopy;
+    [ObservableProperty] private bool _autoUpdate;
+    [ObservableProperty] private bool _betaChannel;
+    [ObservableProperty] private string? _updateStatus;
+    [ObservableProperty] private bool _checkingUpdate;
+
+    // ---------- Сезоны ----------
+    [ObservableProperty] private bool _seasonEffects;
+    [ObservableProperty] private bool _startupSound;
+
+    partial void OnSeasonEffectsChanged(bool value)
+    {
+        settings.Current.SeasonEffects = value;
+        settings.Save();
+        (App.Services.GetService(typeof(MainViewModel)) as MainViewModel)?.UpdateEffectsPaused();
+    }
+
+    partial void OnStartupSoundChanged(bool value)
+    {
+        settings.Current.StartupSound = value;
+        settings.Save();
+    }
+
+    // ---------- Трей и напоминания ----------
+    public IReadOnlyList<string> ReminderOptions { get; } = new[] { L.T("Не напоминать"), L.T("Каждый час"), L.T("Каждые 2 часа"), L.T("Каждые 3 часа") };
+    [ObservableProperty] private bool _minimizeToTray;
+    [ObservableProperty] private int _reminderHours;
+
+    partial void OnMinimizeToTrayChanged(bool value)
+    {
+        settings.Current.MinimizeToTray = value;
+        settings.Save();
+    }
+
+    partial void OnReminderHoursChanged(int value)
+    {
+        settings.Current.PlaytimeReminderHours = Math.Clamp(value, 0, 3);
+        settings.Save();
+    }
+
+    partial void OnAutoUpdateChanged(bool value)
+    {
+        settings.Current.AutoUpdate = value;
+        settings.Save();
+    }
+
+    partial void OnBetaChannelChanged(bool value)
+    {
+        settings.Current.UpdateChannel = value && CanUseBeta ? "beta" : "stable";
+        settings.Save();
+    }
+
+    [RelayCommand]
+    private async Task CheckUpdateAsync()
+    {
+        CheckingUpdate = true;
+        UpdateStatus = L.T("Проверяем GitHub…");
+        try
+        {
+            settings.Current.SkippedUpdate = null;
+            var info = IsInstalledCopy ? await updates.CheckAndDownloadAsync(CancellationToken.None) : await updates.CheckAsync(CancellationToken.None);
+            UpdateStatus = info switch
+            {
+                null => L.T($"У вас последняя версия ({CurrentVersion}, канал {updates.Channel}) 🐸"),
+                _ when updates.Ready is not null => L.T($"Версия {info.Version} скачана — нажмите «Обновить и перезапустить» вверху окна"),
+                _ when info.Sha256 is null => L.T($"Есть версия {info.Version}, но у релиза нет SHA-256 — скачайте вручную со страницы релиза"),
+                _ when !IsInstalledCopy => L.T($"Есть версия {info.Version}. Автообновление работает в установленном лаунчере (не из папки разработки)"),
+                _ => L.T($"Есть версия {info.Version}"),
+            };
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.IO.IOException)
+        {
+            UpdateStatus = L.T("GitHub недоступен: ") + ex.Message;
+        }
+        finally
+        {
+            CheckingUpdate = false;
+        }
+    }
+
+    // ---------- Горячие клавиши ----------
+    public ObservableCollection<HotkeyItem> Hotkeys { get; } = new();
+
+    public void SetHotkey(HotkeyItem item, string gesture)
+    {
+        hotkeys.Set(item.Id, gesture);
+        LoadHotkeys();
+    }
+
+    [RelayCommand]
+    private void ResetHotkeys()
+    {
+        hotkeys.Reset();
+        LoadHotkeys();
+    }
+
+    private void LoadHotkeys() =>
+        Hotkeys.ReplaceWith(HotkeyService.Actions.Select(a => new HotkeyItem(a.Id, a.Label, hotkeys.Get(a.Id))));
+
     public ObservableCollection<ThemeItem> Themes { get; } = new();
+
+    // ---------- Язык ----------
+    public IReadOnlyList<LanguageInfo> LanguageChoices { get; } =
+        new[] { new LanguageInfo("auto", L.T("Как в системе"), "") }.Concat(L.Languages).ToList();
+    [ObservableProperty] private LanguageInfo? _language;
+    [ObservableProperty] private bool _languageRestartNeeded;
+
+    partial void OnLanguageChanged(LanguageInfo? value)
+    {
+        if (value is null || value.Code == settings.Current.Language) return;
+        settings.Current.Language = value.Code;
+        settings.Save();
+        LanguageRestartNeeded = L.Resolve(value.Code, System.Globalization.CultureInfo.InstalledUICulture) != L.Language;
+    }
+
+    [RelayCommand]
+    private static void RestartForLanguage() => App.Restart();
 
     public LauncherSettings Settings => settings.Current;
 
@@ -583,7 +857,16 @@ public partial class SettingsViewModel(
     {
         Themes.ReplaceWith(ThemeService.Themes.Select(t => new ThemeItem(t, themes.IsUnlocked(t), t.Key == settings.Current.Theme)));
         DiscordPresence = settings.Current.DiscordPresence;
+        Language = LanguageChoices.FirstOrDefault(l => l.Code == settings.Current.Language) ?? LanguageChoices[0];
         CloseOnLaunch = settings.Current.CloseOnLaunch;
+        AutoUpdate = settings.Current.AutoUpdate;
+        MinimizeToTray = settings.Current.MinimizeToTray;
+        SeasonEffects = settings.Current.SeasonEffects;
+        StartupSound = settings.Current.StartupSound;
+        ReminderHours = Math.Clamp(settings.Current.PlaytimeReminderHours, 0, 3);
+        BetaChannel = settings.Current.UpdateChannel == "beta" && CanUseBeta;
+        OnPropertyChanged(nameof(CanUseBeta));
+        LoadHotkeys();
         DefaultRamMb = settings.Current.DefaultRamMb;
         return Task.CompletedTask;
     }
@@ -593,10 +876,14 @@ public partial class SettingsViewModel(
     {
         if (!item.Unlocked)
         {
-            toasts.Show($"Тема «{item.Theme.Name}» доступна с {item.Theme.RequiresLabel}", ToastKind.Info);
+            toasts.Show(L.T($"Тема «{item.Theme.Name}» доступна с {item.Theme.RequiresLabel}"), ToastKind.Info);
             WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Subscription));
             return;
         }
+
+        if (Seasons.IsWinterInSummer(item.Theme.Key, AppClock.Today) &&
+            MessageBox.Show(L.T("Ты уверен? За окном +30° 🥵"), "FrogLauncher", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+            return;
 
         themes.Apply(item.Theme.Key);
         settings.Current.Theme = item.Theme.Key;
@@ -632,9 +919,21 @@ public partial class SettingsViewModel(
 
 public sealed record ThemeItem(ThemeInfo Theme, bool Unlocked, bool IsActive);
 
-/// <summary>«Помощь»: о лаунчере, исходный код, юридические оговорки.</summary>
-public partial class AboutViewModel(IOptions<LauncherOptions> options) : ObservableObject
+public partial class HotkeyItem(string id, string label, string gesture) : ObservableObject
 {
+    public string Id { get; } = id;
+    public string Label { get; } = label;
+    public string Gesture { get; } = gesture;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(Display))] private bool _isCapturing;
+    public string Display => IsCapturing ? L.T("Нажмите сочетание…") : Gesture.Length == 0 ? "—" : Gesture;
+}
+
+/// <summary>«Помощь»: о лаунчере, исходный код, юридические оговорки.</summary>
+public partial class AboutViewModel(IOptions<LauncherOptions> options, OnboardingViewModel onboarding) : ObservableObject
+{
+    [RelayCommand]
+    private void ShowOnboarding() => onboarding.Show();
+
     public string Version => LaunchService.LauncherVersion;
     public string GitHubUrl => options.Value.GitHubUrl;
 

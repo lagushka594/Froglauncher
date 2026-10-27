@@ -10,16 +10,16 @@ namespace FrogLauncher.Services;
 
 /// <summary>Лимит инстансов тира — повод для мягкого апселла, а не ошибка.</summary>
 public sealed class InstanceLimitException(string tier, int limit)
-    : Exception($"У {TierNames.Display(tier)} максимум {limit} {VersionsWord(limit)}. Froglet — 50, Frog+ — ∞.")
+    : Exception(L.T($"У {TierNames.Display(tier)} максимум {limit} {VersionsWord(limit)}. Froglet — 50, Frog+ — ∞."))
 {
     public string Tier { get; } = tier;
     public int Limit { get; } = limit;
 
     private static string VersionsWord(int n) => (n % 10, n % 100) switch
     {
-        (1, not 11) => "версия",
-        (>= 2 and <= 4, < 12 or > 14) => "версии",
-        _ => "версий",
+        (1, not 11) => L.T("версия"),
+        (>= 2 and <= 4, < 12 or > 14) => L.T("версии"),
+        _ => L.T("версий"),
     };
 }
 

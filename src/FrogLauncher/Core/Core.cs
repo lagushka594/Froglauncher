@@ -37,6 +37,14 @@ public sealed class LauncherOptions
     public int DiscordRedirectPort { get; set; } = 53134;
 
     public bool UsesDiscordRoles => SubscriptionSource != "server";
+
+    /// <summary>Список серверов (обновляется коммитом в репозиторий, без нового релиза).</summary>
+    public string ServerListUrl { get; set; } = "https://raw.githubusercontent.com/lagushka594/Froglauncher/main/servers.json";
+    public string PromoListUrl { get; set; } = "https://raw.githubusercontent.com/lagushka594/Froglauncher/main/promos.json";
+    /// <summary>Репозиторий с релизами для автообновления (owner/name).</summary>
+    public string UpdateRepository { get; set; } = "lagushka594/Froglauncher";
+    /// <summary>Новогодний плейлист (кнопка на главной в праздники).</summary>
+    public string NewYearPlaylistUrl { get; set; } = "https://www.youtube.com/results?search_query=minecraft+christmas+music";
     public string DiscordPurchaseUrl { get; set; } = "https://discord.gg/u6zJZ7BzU5";
 }
 
@@ -116,7 +124,7 @@ public static class EmbeddedTiers
     public static Frog.Shared.TierCatalog Load()
     {
         using var s = typeof(EmbeddedTiers).Assembly.GetManifestResourceStream("FrogLauncher.tiers.json")
-                      ?? throw new InvalidOperationException("В сборке нет tiers.json");
+                      ?? throw new InvalidOperationException(L.T("В сборке нет tiers.json"));
         using var r = new StreamReader(s);
         return Frog.Shared.TierCatalog.Parse(r.ReadToEnd());
     }
@@ -156,17 +164,17 @@ public static class Fmt
 {
     public static string Bytes(double b) => b switch
     {
-        >= 1 << 30 => $"{b / (1 << 30):0.0} ГБ",
-        >= 1 << 20 => $"{b / (1 << 20):0.0} МБ",
-        >= 1 << 10 => $"{b / (1 << 10):0} КБ",
-        _ => $"{b:0} Б",
+        >= 1 << 30 => L.T($"{b / (1 << 30):0.0} ГБ"),
+        >= 1 << 20 => L.T($"{b / (1 << 20):0.0} МБ"),
+        >= 1 << 10 => L.T($"{b / (1 << 10):0} КБ"),
+        _ => L.T($"{b:0} Б"),
     };
 
     public static string Eta(TimeSpan? t) => t switch
     {
         null => "—",
-        { TotalHours: >= 1 } v => $"{(int)v.TotalHours} ч {v.Minutes} мин",
-        { TotalMinutes: >= 1 } v => $"{v.Minutes} мин {v.Seconds} с",
-        var v => $"{v.Value.Seconds} с",
+        { TotalHours: >= 1 } v => L.T($"{(int)v.TotalHours} ч {v.Minutes} мин"),
+        { TotalMinutes: >= 1 } v => L.T($"{v.Minutes} мин {v.Seconds} с"),
+        var v => L.T($"{v.Value.Seconds} с"),
     };
 }

@@ -25,7 +25,7 @@ public sealed record DownloadProgress(
     public static DownloadProgress Indeterminate(string stage) => new(stage, 0, 0, 0, 0, 0);
 }
 
-public sealed class HashMismatchException(string path) : IOException($"Контрольная сумма не совпала: {System.IO.Path.GetFileName(path)}");
+public sealed class HashMismatchException(string path) : IOException(L.T($"Контрольная сумма не совпала: {System.IO.Path.GetFileName(path)}"));
 
 /// <summary>
 /// Многопоточная загрузка с проверкой SHA1.

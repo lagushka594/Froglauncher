@@ -1,3 +1,4 @@
+using FrogLauncher.Core;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
@@ -15,8 +16,8 @@ public partial class ModpackItem(ModpackHit hit) : ObservableObject
 {
     public ModpackHit Hit { get; } = hit;
 
-    public string DownloadsText => Hit.Downloads >= 1_000_000 ? $"{Hit.Downloads / 1_000_000.0:0.#} млн загрузок"
-        : Hit.Downloads >= 1000 ? $"{Hit.Downloads / 1000.0:0.#} тыс. загрузок" : $"{Hit.Downloads} загрузок";
+    public string DownloadsText => Hit.Downloads >= 1_000_000 ? L.T($"{Hit.Downloads / 1_000_000.0:0.#} млн загрузок")
+        : Hit.Downloads >= 1000 ? L.T($"{Hit.Downloads / 1000.0:0.#} тыс. загрузок") : L.T($"{Hit.Downloads} загрузок");
 
     /// <summary>«1.20.1 · Fabric» — последняя версия игры и модлоадеры сборки.</summary>
     public string Meta
@@ -43,17 +44,19 @@ public partial class ModpacksViewModel(
     SettingsService settings,
     DiscordPresenceService presence,
     ToastService toasts,
-    ILogger<ModpacksViewModel> log) : ObservableObject, IPageActivated
+    ILogger<ModpacksViewModel> log) : ObservableObject, IPageActivated, IRefreshable
 {
-    public const string AnyVersion = "Любая версия";
+    public Task RefreshPageAsync() => SearchAsync();
+
+    public static readonly string AnyVersion = L.T("Любая версия");
 
     public ObservableCollection<ModpackItem> Results { get; } = new();
     public ObservableCollection<string> GameVersions { get; } = new() { AnyVersion };
-    public IReadOnlyList<string> LoaderFilters { get; } = new[] { "Любой модлоадер", "Fabric", "Forge", "NeoForge", "Quilt" };
+    public IReadOnlyList<string> LoaderFilters { get; } = new[] { L.T("Любой модлоадер"), "Fabric", "Forge", "NeoForge", "Quilt" };
     public ProgressState Progress { get; } = new();
 
     [ObservableProperty] private string _query = "";
-    [ObservableProperty] private string _selectedLoader = "Любой модлоадер";
+    [ObservableProperty] private string _selectedLoader = L.T("Любой модлоадер");
     [ObservableProperty] private string _selectedVersion = AnyVersion;
     [ObservableProperty] private bool _isSearching;
     [ObservableProperty] private bool _isInstalling;
@@ -88,6 +91,12 @@ public partial class ModpacksViewModel(
 
     private string? VersionFilterValue => SelectedVersion == AnyVersion ? null : SelectedVersion;
 
+    public void SearchFor(string query)
+    {
+        Query = query;
+        _ = SearchAsync();
+    }
+
     [RelayCommand]
     private async Task SearchAsync()
     {
@@ -109,11 +118,11 @@ public partial class ModpacksViewModel(
             foreach (var h in hits) Results.Add(new ModpackItem(h));
             _offset += hits.Count;
             CanLoadMore = hits.Count == ModpackService.PageSize;
-            if (!append && hits.Count == 0) toasts.Show("Сборок не нашлось — попробуйте другой запрос или фильтр", ToastKind.Info);
+            if (!append && hits.Count == 0) toasts.Show(L.T("Сборок не нашлось — попробуйте другой запрос или фильтр"), ToastKind.Info);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            toasts.Show("Modrinth недоступен, попробуйте позже", ToastKind.Error);
+            toasts.Show(L.T("Modrinth недоступен, попробуйте позже"), ToastKind.Error);
         }
         finally
         {
@@ -131,8 +140,8 @@ public partial class ModpacksViewModel(
         var progress = new Progress<DownloadProgress>(p =>
         {
             Progress.Apply(p);
-            _ = presence.SetAsync(new PresenceState($"Устанавливает сборку {item.Hit.Title}",
-                p.TotalBytes > 0 ? $"{p.Stage}: {p.Percent:0}%" : p.Stage, SmallImage: "download", SmallText: "Загрузка"));
+            _ = presence.SetAsync(new PresenceState(L.T($"Устанавливает сборку {item.Hit.Title}"),
+                p.TotalBytes > 0 ? $"{p.Stage}: {p.Percent:0}%" : p.Stage, SmallImage: "download", SmallText: L.T("Загрузка")));
         });
 
         try
@@ -141,7 +150,7 @@ public partial class ModpacksViewModel(
             item.IsInstalled = true;
             settings.Current.SelectedInstanceId = inst.Id;
             settings.Save();
-            toasts.Show($"Сборка «{inst.Name}» готова ({inst.DisplayVersion}). Жмите «Играть» на главной 🐸", ToastKind.Success, 7);
+            toasts.Show(L.T($"Сборка «{inst.Name}» готова ({inst.DisplayVersion}). Жмите «Играть» на главной 🐸"), ToastKind.Success, 7);
             WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Home));
         }
         catch (InstanceLimitException ex)
@@ -151,7 +160,7 @@ public partial class ModpacksViewModel(
         catch (Exception ex) when (ex is ModsException or HttpRequestException or IOException or InvalidDataException or TaskCanceledException)
         {
             log.LogWarning(ex, "Установка сборки {Pack}", item.Hit.ProjectId);
-            toasts.Show("Сборка не установилась: " + ex.Message, ToastKind.Error, 8);
+            toasts.Show(L.T("Сборка не установилась: ") + ex.Message, ToastKind.Error, 8);
         }
         finally
         {

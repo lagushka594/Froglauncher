@@ -34,6 +34,13 @@ public sealed class VisibleIfConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
+/// <summary>bool → !bool (например, IsEnabled = не занято).</summary>
+public sealed class NotConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => value is not true;
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) => value is not true;
+}
+
 /// <summary>int? ↔ строка в TextBox (пусто = null).</summary>
 public sealed class NullableIntConverter : IValueConverter
 {

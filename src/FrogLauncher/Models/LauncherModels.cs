@@ -1,3 +1,4 @@
+using FrogLauncher.Core;
 using System.Text.Json.Serialization;
 
 namespace FrogLauncher.Models;
@@ -15,7 +16,16 @@ public sealed class Instance
     /// <summary>ID версии для запуска (после установки модлоадера, например fabric-loader-0.16.5-1.21.1).</summary>
     public string? LaunchVersionId { get; set; }
 
+    /// <summary>Максимум памяти Java (-Xmx).</summary>
     public int RamMb { get; set; } = 4096;
+    /// <summary>Стартовая память Java (-Xms); null — min(RamMb, 1024).</summary>
+    public int? RamMinMb { get; set; }
+    /// <summary>Сборщик мусора: g1 (по умолчанию) | zgc (Java 17+) | parallel.</summary>
+    public string Gc { get; set; } = "g1";
+    /// <summary>Приоритет процесса игры: normal | abovenormal | high.</summary>
+    public string Priority { get; set; } = "normal";
+    /// <summary>Просить Windows запускать игру на дискретной видеокарте (ноутбуки с двумя GPU).</summary>
+    public bool PreferDiscreteGpu { get; set; }
     public string JvmArgs { get; set; } = "";
     /// <summary>Автонастройка JVM (фича jvm_autotune, Frog+ и выше).</summary>
     public bool JvmAutotune { get; set; }
@@ -75,7 +85,7 @@ public sealed class GameAccount
     public string? MsRefreshToken { get; set; }
     public string? Xuid { get; set; }
 
-    [JsonIgnore] public string TypeLabel => Type == AccountType.Microsoft ? "Microsoft" : "Оффлайн";
+    [JsonIgnore] public string TypeLabel => Type == AccountType.Microsoft ? "Microsoft" : L.T("Оффлайн");
 }
 
 public sealed class AccountsFile
@@ -89,10 +99,44 @@ public sealed class LauncherSettings
 {
     public string? SelectedInstanceId { get; set; }
     public string Theme { get; set; } = "swamp";
+    /// <summary>"auto" — язык системы; иначе ru, en, es, de, pt-BR. Меняется после перезапуска.</summary>
+    public string Language { get; set; } = "auto";
     public bool CloseOnLaunch { get; set; }
     public int DefaultRamMb { get; set; } = 4096;
     /// <summary>Показывать активность в Discord («Играет в FrogLauncher»).</summary>
     public bool DiscordPresence { get; set; } = true;
+
+    /// <summary>Крестик сворачивает лаунчер в трей (выход — через меню трея или «Выход»).</summary>
+    public bool MinimizeToTray { get; set; } = true;
+    public bool TrayHintShown { get; set; }
+    /// <summary>Напоминать о времени в игре каждые N часов (0 — выкл).</summary>
+    public int PlaytimeReminderHours { get; set; } = 2;
+    /// <summary>Лепестки, листья, снег и прочие сезонные эффекты (v2.4).</summary>
+    public bool SeasonEffects { get; set; } = true;
+    /// <summary>Звук сезона при запуске.</summary>
+    public bool StartupSound { get; set; } = true;
+    /// <summary>Один раз переключаем «Болото» по умолчанию на сезонную тему.</summary>
+    public bool SeasonsIntroduced { get; set; }
+    /// <summary>Последний релиз Minecraft, о котором уже сообщили.</summary>
+    public string? LastSeenMcRelease { get; set; }
+
+    /// <summary>Онбординг первого запуска пройден или пропущен.</summary>
+    public bool OnboardingDone { get; set; }
+
+    /// <summary>Канал обновлений: stable — для всех, beta — Frog+ и выше.</summary>
+    public string UpdateChannel { get; set; } = "stable";
+    public bool AutoUpdate { get; set; } = true;
+    /// <summary>Пропущенная игроком версия — о ней больше не напоминаем.</summary>
+    public string? SkippedUpdate { get; set; }
+
+    /// <summary>Избранные серверы (адреса).</summary>
+    public List<string> FavoriteServers { get; set; } = new();
+    /// <summary>Серверы, добавленные игроком.</summary>
+    public List<FrogLauncher.Services.ServerEntry> CustomServers { get; set; } = new();
+    public string? LastServer { get; set; }
+
+    /// <summary>Переназначенные горячие клавиши: действие → «Ctrl+Enter».</summary>
+    public Dictionary<string, string> Hotkeys { get; set; } = new();
 }
 
 public sealed record JavaRuntime(string JavaExe, int Major, string Version, string Source)

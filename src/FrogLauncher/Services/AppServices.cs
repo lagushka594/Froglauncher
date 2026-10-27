@@ -131,6 +131,8 @@ public sealed class ToastService
 
     public void Show(string message, ToastKind kind = ToastKind.Info, int seconds = 4)
     {
+        // Сообщения сервера и исключений приходят по-русски — переводим по словарю, если есть.
+        message = L.T(message);
         Application.Current.Dispatcher.Invoke(async () =>
         {
             var t = new Toast(message, kind);

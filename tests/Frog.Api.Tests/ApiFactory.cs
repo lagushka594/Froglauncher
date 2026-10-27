@@ -12,6 +12,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
 
+// Хосты WebApplicationFactory поднимаются по одному: параллельный старт Program иногда обрывается
+// («entry point exited without ever building an IHost»).
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
+
 namespace Frog.Api.Tests;
 
 /// <summary>
@@ -23,6 +27,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     // От текущего момента: JwtBearer проверяет срок токена по реальным часам.
     public FakeTimeProvider Clock { get; } = new(DateTimeOffset.UtcNow);
     private readonly string _db = "frog-" + Guid.NewGuid();
+
+    /// <summary>Акции и промокоды теста (по умолчанию пусто — сезонные скидки из promos.json не мешают ценам).</summary>
+    public PromoFile Promos { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -39,6 +46,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             s.RemoveAll<TimeProvider>();
             s.AddSingleton<TimeProvider>(Clock);
             s.AddScoped<IPaymentProvider, FakePaymentProvider>();
+            s.RemoveAll<PromoCatalog>();
+            s.AddSingleton(_ => new PromoCatalog(Promos));
             var worker = s.First(d => d.ImplementationType == typeof(SubscriptionLifecycleWorker));
             s.Remove(worker);
         });

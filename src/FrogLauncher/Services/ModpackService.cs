@@ -85,12 +85,12 @@ public sealed class ModpackService(
     public async Task<Instance> InstallAsync(ModpackHit pack, string? gameVersion, int ramMb, IProgress<DownloadProgress>? progress, CancellationToken ct)
     {
         // 1. Версия сборки: самая свежая (релиз приоритетнее), при фильтре — под выбранную версию игры.
-        progress?.Report(DownloadProgress.Indeterminate("Ищем файл сборки"));
+        progress?.Report(DownloadProgress.Indeterminate(L.T("Ищем файл сборки")));
         var url = $"{Api}project/{pack.ProjectId}/version" +
                   (string.IsNullOrWhiteSpace(gameVersion) ? "" : "?game_versions=" + Uri.EscapeDataString($"[\"{gameVersion}\"]"));
         var versions = JsonNode.Parse(await Http.GetStringAsync(url, ct))!.AsArray();
         var version = versions.FirstOrDefault(v => v!["version_type"]?.GetValue<string>() == "release") ?? versions.FirstOrDefault()
-                      ?? throw new ModsException("У сборки нет файлов для установки" + (gameVersion is null ? "" : $" под {gameVersion}"));
+                      ?? throw new ModsException(L.T("У сборки нет файлов для установки") + (gameVersion is null ? "" : L.T($" под {gameVersion}")));
         var files = version["files"]!.AsArray();
         var file = files.FirstOrDefault(f => f!["filename"]?.GetValue<string>()?.EndsWith(".mrpack") == true) ?? files.First();
 
@@ -98,15 +98,23 @@ public sealed class ModpackService(
         await downloads.DownloadAsync(new[]
         {
             new DownloadItem(file["url"]!.GetValue<string>(), mrpackPath, file["hashes"]?["sha1"]?.GetValue<string>(), file["size"]?.GetValue<long>() ?? 0),
-        }, "Скачиваем сборку", progress, ct);
+        }, L.T("Скачиваем сборку"), progress, ct);
 
+        return await InstallFromFileAsync(mrpackPath, pack.Title, pack.IconUrl, ramMb, progress, ct);
+    }
+
+    /// <summary>Установить .mrpack с диска (импорт или скачанный из каталога) в новую версию.</summary>
+    public async Task<Instance> InstallFromFileAsync(string mrpackPath, string? name, string? iconUrl, int ramMb,
+        IProgress<DownloadProgress>? progress, CancellationToken ct)
+    {
         using var zip = ZipFile.OpenRead(mrpackPath);
         var index = ReadIndex(zip);
         var (loader, loaderVersion, mc) = MapDependencies(index.Dependencies);
+        var title = name ?? (index.Name is { Length: > 0 } n ? n : Path.GetFileNameWithoutExtension(mrpackPath));
 
         // 2. Новая версия (проверка лимита тарифа — здесь же).
-        var inst = instances.Create(pack.Title, mc, loader, loaderVersion, ramMb);
-        inst.IconUrl = pack.IconUrl;
+        var inst = instances.Create(title, mc, loader, loaderVersion, ramMb);
+        inst.IconUrl = iconUrl;
         try
         {
             // 3. Файлы сборки.
@@ -116,13 +124,13 @@ public sealed class ModpackService(
                 if (f.Env?.GetValueOrDefault("client") == "unsupported") continue; // только серверные
                 var dst = SafePath(inst.GameDirectory, f.Path);
                 var src = f.Downloads.FirstOrDefault(IsAllowedUrl)
-                          ?? throw new ModsException($"Файл {f.Path} лежит на недоверенном хосте — установка остановлена");
+                          ?? throw new ModsException(L.T($"Файл {f.Path} лежит на недоверенном хосте — установка остановлена"));
                 items.Add(new DownloadItem(src, dst, f.Hashes.GetValueOrDefault("sha1"), f.FileSize));
             }
-            await downloads.DownloadAsync(items, "Моды сборки", progress, ct);
+            await downloads.DownloadAsync(items, L.T("Моды сборки"), progress, ct);
 
             // 4. overrides/ — конфиги, ресурспаки, скрипты; client-overrides/ перекрывают общие.
-            progress?.Report(DownloadProgress.Indeterminate("Распаковываем настройки сборки"));
+            progress?.Report(DownloadProgress.Indeterminate(L.T("Распаковываем настройки сборки")));
             foreach (var prefix in new[] { "overrides/", "client-overrides/" })
                 foreach (var e in zip.Entries.Where(e => e.FullName.StartsWith(prefix, StringComparison.Ordinal) && !e.FullName.EndsWith('/')))
                 {
@@ -133,7 +141,7 @@ public sealed class ModpackService(
 
             instances.Save(inst);
             log.LogInformation("Сборка {Pack} {Version} установлена: {Mc} {Loader} {LoaderVersion}, файлов {Count}",
-                pack.Title, index.VersionId, mc, loader, loaderVersion, items.Count);
+                title, index.VersionId, mc, loader, loaderVersion, items.Count);
             return inst;
         }
         catch
@@ -146,17 +154,17 @@ public sealed class ModpackService(
 
     internal static MrpackIndex ReadIndex(ZipArchive zip)
     {
-        var entry = zip.GetEntry("modrinth.index.json") ?? throw new ModsException("Это не сборка Modrinth (.mrpack)");
+        var entry = zip.GetEntry("modrinth.index.json") ?? throw new ModsException(L.T("Это не сборка Modrinth (.mrpack)"));
         using var s = entry.Open();
-        var index = JsonSerializer.Deserialize<MrpackIndex>(s, Json.Mojang) ?? throw new ModsException("Повреждён modrinth.index.json");
-        if (index.Game != "minecraft") throw new ModsException("Сборка не для Minecraft");
+        var index = JsonSerializer.Deserialize<MrpackIndex>(s, Json.Mojang) ?? throw new ModsException(L.T("Повреждён modrinth.index.json"));
+        if (index.Game != "minecraft") throw new ModsException(L.T("Сборка не для Minecraft"));
         return index;
     }
 
     /// <summary>dependencies: minecraft + fabric-loader | quilt-loader | forge | neoforge → тип модлоадера и его версия в формате лаунчера.</summary>
     internal static (LoaderType loader, string? loaderVersion, string mc) MapDependencies(IReadOnlyDictionary<string, string> deps)
     {
-        var mc = deps.GetValueOrDefault("minecraft") ?? throw new ModsException("В сборке не указана версия Minecraft");
+        var mc = deps.GetValueOrDefault("minecraft") ?? throw new ModsException(L.T("В сборке не указана версия Minecraft"));
         if (deps.TryGetValue("fabric-loader", out var fabric)) return (LoaderType.Fabric, fabric, mc);
         if (deps.TryGetValue("quilt-loader", out var quilt)) return (LoaderType.Quilt, quilt, mc);
         if (deps.TryGetValue("neoforge", out var neo)) return (LoaderType.NeoForge, neo, mc);
@@ -171,7 +179,7 @@ public sealed class ModpackService(
         var rootFull = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
         var full = Path.GetFullPath(Path.Combine(rootFull, relative.Replace('/', Path.DirectorySeparatorChar)));
         if (Path.IsPathRooted(relative) || !full.StartsWith(rootFull, StringComparison.OrdinalIgnoreCase))
-            throw new ModsException($"Недопустимый путь в сборке: {relative}");
+            throw new ModsException(L.T($"Недопустимый путь в сборке: {relative}"));
         return full;
     }
 

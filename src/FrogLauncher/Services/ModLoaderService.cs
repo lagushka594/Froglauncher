@@ -64,7 +64,7 @@ public sealed class ModLoaderService(
                 {
                     var shortV = full.Split('-')[1];
                     var rec = shortV == recommended;
-                    return new LoaderVersion(full, rec, rec ? $"{shortV} ⭐ рекомендуемая" : shortV);
+                    return new LoaderVersion(full, rec, rec ? L.T($"{shortV} ⭐ рекомендуемая") : shortV);
                 }).ToList();
             }
 
@@ -93,9 +93,9 @@ public sealed class ModLoaderService(
         if (type == LoaderType.Vanilla) return gameVersion;
         if (string.IsNullOrEmpty(loaderVersion))
             loaderVersion = (await GetVersionsAsync(type, gameVersion, ct)).FirstOrDefault(v => v.Recommended)?.Version
-                            ?? throw new InvalidOperationException($"{type} не поддерживает {gameVersion}");
+                            ?? throw new InvalidOperationException(L.T($"{type} не поддерживает {gameVersion}"));
 
-        progress?.Report(DownloadProgress.Indeterminate($"Устанавливаем {type} {loaderVersion}"));
+        progress?.Report(DownloadProgress.Indeterminate(L.T($"Устанавливаем {type} {loaderVersion}")));
         var id = type switch
         {
             LoaderType.Fabric => await InstallProfileJsonAsync($"{FabricMeta}versions/loader/{gameVersion}/{loaderVersion}/profile/json", ct),
@@ -191,7 +191,7 @@ public sealed class ModLoaderService(
         // Библиотеки, нужные процессорам.
         var profileLibs = profile["libraries"]?.Deserialize<List<Library>>(Json.Mojang) ?? new();
         await downloads.DownloadAsync(VersionService.LibraryDownloads(new VersionInfo { Libraries = profileLibs }).ToList(),
-            "Библиотеки установщика", progress, ct);
+            L.T("Библиотеки установщика"), progress, ct);
 
         var processors = profile["processors"]?.AsArray() ?? new JsonArray();
         if (processors.Count == 0) return id;
@@ -210,7 +210,7 @@ public sealed class ModLoaderService(
             for (var i = 0; i < list.Count; i++)
             {
                 ct.ThrowIfCancellationRequested();
-                progress?.Report(new DownloadProgress($"Forge: обработка {i + 1}/{list.Count}", i, list.Count, 0, 0, 0));
+                progress?.Report(new DownloadProgress(L.T($"Forge: обработка {i + 1}/{list.Count}"), i, list.Count, 0, 0, 0));
                 await RunProcessorAsync(list[i]!, data, javaExe, ct);
             }
         }
@@ -287,7 +287,7 @@ public sealed class ModLoaderService(
         }
 
         var jar = Lib(proc["jar"]!.GetValue<string>());
-        var mainClass = ReadMainClass(jar) ?? throw new InvalidDataException($"Нет Main-Class в {Path.GetFileName(jar)}");
+        var mainClass = ReadMainClass(jar) ?? throw new InvalidDataException(L.T($"Нет Main-Class в {Path.GetFileName(jar)}"));
         var cp = new[] { jar }.Concat(proc["classpath"]?.AsArray().Select(c => Lib(c!.GetValue<string>())) ?? Array.Empty<string>());
 
         var psi = new ProcessStartInfo(javaExe)
@@ -310,7 +310,7 @@ public sealed class ModLoaderService(
         if (p.ExitCode != 0)
         {
             log.LogError("Процессор Forge {Main} упал: {Err}", mainClass, (await stderr).Split('\n').TakeLast(20));
-            throw new InvalidOperationException($"Установка Forge не удалась на шаге {mainClass} (код {p.ExitCode})");
+            throw new InvalidOperationException(L.T($"Установка Forge не удалась на шаге {mainClass} (код {p.ExitCode})"));
         }
         _ = await stdout;
     }
@@ -329,7 +329,7 @@ public sealed class ModLoaderService(
 
     private static async Task<string> ReadEntryAsync(ZipArchive zip, string name, CancellationToken ct)
     {
-        var entry = zip.GetEntry(name) ?? throw new InvalidDataException($"В установщике нет {name}");
+        var entry = zip.GetEntry(name) ?? throw new InvalidDataException(L.T($"В установщике нет {name}"));
         using var r = new StreamReader(entry.Open());
         return await r.ReadToEndAsync(ct);
     }
@@ -346,7 +346,7 @@ public sealed class ModLoaderService(
     {
         var full = Path.GetFullPath(Path.Combine(root, relative));
         if (!full.StartsWith(Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("Недопустимый путь в архиве");
+            throw new InvalidDataException(L.T("Недопустимый путь в архиве"));
         return full;
     }
 }

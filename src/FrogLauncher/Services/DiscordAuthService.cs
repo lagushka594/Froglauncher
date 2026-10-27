@@ -60,7 +60,7 @@ public sealed class DiscordAuthService(IHttpClientFactory httpFactory, IOptions<
     public async Task<DiscordSession> LoginAsync(CancellationToken ct)
     {
         if (string.IsNullOrEmpty(O.DiscordApplicationId))
-            throw new DiscordAuthException("Не задан DiscordApplicationId в appsettings.json");
+            throw new DiscordAuthException(L.T("Не задан DiscordApplicationId в appsettings.json"));
 
         var verifier = B64Url(RandomNumberGenerator.GetBytes(48));
         var state = B64Url(RandomNumberGenerator.GetBytes(16));
@@ -69,7 +69,7 @@ public sealed class DiscordAuthService(IHttpClientFactory httpFactory, IOptions<
         try { listener.Start(); }
         catch (SocketException)
         {
-            throw new DiscordAuthException($"Порт {O.DiscordRedirectPort} занят другой программой — закройте её и повторите вход");
+            throw new DiscordAuthException(L.T($"Порт {O.DiscordRedirectPort} занят другой программой — закройте её и повторите вход"));
         }
 
         var url = "https://discord.com/oauth2/authorize" +
@@ -115,7 +115,7 @@ public sealed class DiscordAuthService(IHttpClientFactory httpFactory, IOptions<
     public async Task<DiscordMember?> GetMemberAsync(CancellationToken ct)
     {
         if (string.IsNullOrEmpty(O.DiscordGuildId))
-            throw new DiscordAuthException("Не задан DiscordGuildId в appsettings.json");
+            throw new DiscordAuthException(L.T("Не задан DiscordGuildId в appsettings.json"));
 
         for (var attempt = 0; attempt < 2; attempt++)
         {
@@ -128,11 +128,11 @@ public sealed class DiscordAuthService(IHttpClientFactory httpFactory, IOptions<
             if (resp.StatusCode == HttpStatusCode.Unauthorized)
             {
                 Logout();
-                throw new DiscordAuthException("Сессия Discord истекла — войдите заново", sessionExpired: true);
+                throw new DiscordAuthException(L.T("Сессия Discord истекла — войдите заново"), sessionExpired: true);
             }
             if (resp.StatusCode == HttpStatusCode.NotFound) return null;
             if (resp.StatusCode == HttpStatusCode.TooManyRequests)
-                throw new HttpRequestException("Discord ограничил частоту запросов, попробуйте через минуту");
+                throw new HttpRequestException(L.T("Discord ограничил частоту запросов, попробуйте через минуту"));
             resp.EnsureSuccessStatusCode();
 
             var json = JsonNode.Parse(await resp.Content.ReadAsStringAsync(ct))!;
@@ -140,19 +140,19 @@ public sealed class DiscordAuthService(IHttpClientFactory httpFactory, IOptions<
             return new DiscordMember(roles, json["nick"]?.GetValue<string>());
         }
 
-        throw new DiscordAuthException("Сессия Discord истекла — войдите заново", sessionExpired: true);
+        throw new DiscordAuthException(L.T("Сессия Discord истекла — войдите заново"), sessionExpired: true);
     }
 
     /// <summary>Refresh-токен Discord одноразовый: обновляем в один поток и сохраняем новый.</summary>
     private async Task<string> GetAccessTokenAsync(bool force, CancellationToken ct)
     {
-        var s = _session ?? throw new DiscordAuthException("Войдите через Discord", sessionExpired: true);
+        var s = _session ?? throw new DiscordAuthException(L.T("Войдите через Discord"), sessionExpired: true);
         if (!force && s.ExpiresAt > DateTimeOffset.UtcNow) return s.AccessToken;
 
         await _refreshLock.WaitAsync(ct);
         try
         {
-            if (_session is null) throw new DiscordAuthException("Войдите через Discord", sessionExpired: true);
+            if (_session is null) throw new DiscordAuthException(L.T("Войдите через Discord"), sessionExpired: true);
             if (!force && _session.ExpiresAt > DateTimeOffset.UtcNow) return _session.AccessToken;
 
             using var resp = await Http.PostAsync(ApiBase + "oauth2/token", new FormUrlEncodedContent(new Dictionary<string, string>
@@ -164,7 +164,7 @@ public sealed class DiscordAuthService(IHttpClientFactory httpFactory, IOptions<
             if (resp.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
             {
                 Logout();
-                throw new DiscordAuthException("Сессия Discord истекла — войдите заново", sessionExpired: true);
+                throw new DiscordAuthException(L.T("Сессия Discord истекла — войдите заново"), sessionExpired: true);
             }
 
             var token = await ReadTokenAsync(resp, ct);
@@ -207,9 +207,9 @@ public sealed class DiscordAuthService(IHttpClientFactory httpFactory, IOptions<
         var text = await resp.Content.ReadAsStringAsync(ct);
         if (!resp.IsSuccessStatusCode)
         {
-            var error = JsonNode.Parse(text)?["error_description"]?.GetValue<string>() ?? $"код {(int)resp.StatusCode}";
-            throw new DiscordAuthException("Discord отклонил вход: " + error +
-                                           ". Проверьте в Developer Portal: OAuth2 → Redirects и галочку Public Client (см. README).");
+            var error = JsonNode.Parse(text)?["error_description"]?.GetValue<string>() ?? L.T($"код {(int)resp.StatusCode}");
+            throw new DiscordAuthException(L.T("Discord отклонил вход: ") + error +
+                                           L.T(". Проверьте в Developer Portal: OAuth2 → Redirects и галочку Public Client (см. README)."));
         }
         var j = JsonNode.Parse(text)!;
         return (j["access_token"]!.GetValue<string>(), j["refresh_token"]!.GetValue<string>(), j["expires_in"]?.GetValue<int>() ?? 604800);
@@ -238,17 +238,17 @@ public sealed class DiscordAuthService(IHttpClientFactory httpFactory, IOptions<
 
             if (query.TryGetValue("error", out var error))
             {
-                await RespondAsync(stream, 200, Page("Вход отменён", "Можно закрыть вкладку и вернуться в FrogLauncher."), ct);
-                throw new DiscordAuthException(error == "access_denied" ? "Вход через Discord отменён" : "Discord: " + error);
+                await RespondAsync(stream, 200, Page(L.T("Вход отменён"), L.T("Можно закрыть вкладку и вернуться в FrogLauncher.")), ct);
+                throw new DiscordAuthException(error == "access_denied" ? L.T("Вход через Discord отменён") : "Discord: " + error);
             }
 
             if (!query.TryGetValue("state", out var state) || state != expectedState || !query.TryGetValue("code", out var code))
             {
-                await RespondAsync(stream, 400, Page("Ошибка входа", "Неверный ответ — начните вход заново из лаунчера."), ct);
-                throw new DiscordAuthException("Неверный ответ Discord (state). Начните вход заново.");
+                await RespondAsync(stream, 400, Page(L.T("Ошибка входа"), L.T("Неверный ответ — начните вход заново из лаунчера.")), ct);
+                throw new DiscordAuthException(L.T("Неверный ответ Discord (state). Начните вход заново."));
             }
 
-            await RespondAsync(stream, 200, Page("Готово! 🐸", "Вы вошли через Discord. Вкладку можно закрыть и вернуться в FrogLauncher."), ct);
+            await RespondAsync(stream, 200, Page(L.T("Готово! 🐸"), L.T("Вы вошли через Discord. Вкладку можно закрыть и вернуться в FrogLauncher.")), ct);
             return code;
         }
     }

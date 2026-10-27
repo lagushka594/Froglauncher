@@ -1,11 +1,14 @@
 <UserControl x:Class="FrogLauncher.Views.ProfileView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:FrogLauncher.Core"
              xmlns:v="clr-namespace:FrogLauncher.Views"
              Style="{StaticResource Page}">
     <UserControl.Resources>
         <v:VisibleIfConverter x:Key="VisibleIf" />
     </UserControl.Resources>
+    <TabControl Style="{StaticResource SettingsTabs}" SelectedIndex="{Binding Tab}">
+    <TabItem Header="{l:T '👤 Аккаунты'}">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -18,8 +21,8 @@
                 <StackPanel Orientation="Horizontal">
                     <Image Source="/Assets/main/avatar.png" Height="56" Margin="0,0,12,0" />
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="Игровые аккаунты" Style="{StaticResource H1}" />
-                        <TextBlock Text="С каким ником заходить в Minecraft" Style="{StaticResource Muted}" />
+                        <TextBlock Text="{l:T 'Игровые аккаунты'}" Style="{StaticResource H1}" />
+                        <TextBlock Text="{l:T 'С каким ником заходить в Minecraft'}" Style="{StaticResource Muted}" />
                     </StackPanel>
                 </StackPanel>
 
@@ -42,33 +45,33 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
                 <TextBlock Style="{StaticResource Muted}" Margin="0,4,0,0">
-                    <Run Text="Активный: " /><Run Text="{Binding SelectedAccount.Name, Mode=OneWay, TargetNullValue='не выбран'}" FontWeight="SemiBold" />
+                    <Run Text="{l:T 'Активный: '}" /><Run Text="{Binding SelectedAccount.Name, Mode=OneWay, TargetNullValue={l:T 'не выбран'}}" FontWeight="SemiBold" />
                 </TextBlock>
 
-                <TextBlock Text="Войти через Microsoft (лицензия)" Style="{StaticResource H2}" Margin="0,18,0,6" />
-                <Button Style="{StaticResource AccentButton}" Content="Войти через Microsoft" Command="{Binding LoginMicrosoftCommand}" HorizontalAlignment="Left"
+                <TextBlock Text="{l:T 'Войти через Microsoft (лицензия)'}" Style="{StaticResource H2}" Margin="0,18,0,6" />
+                <Button Style="{StaticResource AccentButton}" Content="{l:T 'Войти через Microsoft'}" Command="{Binding LoginMicrosoftCommand}" HorizontalAlignment="Left"
                         Visibility="{Binding MsWaiting, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
                 <Border CornerRadius="10" Padding="12" Background="#1A06B6D4" BorderBrush="{DynamicResource Accent2Brush}" BorderThickness="1"
                         Visibility="{Binding MsWaiting, Converter={StaticResource VisibleIf}}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource Muted}" Text="Откройте страницу и введите код (уже скопирован):" />
+                        <TextBlock Style="{StaticResource Muted}" Text="{l:T 'Откройте страницу и введите код (уже скопирован):'}" />
                         <TextBlock Text="{Binding DeviceCode.VerificationUri}" Foreground="{DynamicResource Accent2Brush}" Margin="0,4" />
                         <TextBlock Text="{Binding DeviceCode.UserCode}" FontSize="30" FontWeight="Black" FontFamily="Consolas" />
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                             <Image Source="/Assets/ui/loader.png" Height="20" Style="{StaticResource Spinning}" />
-                            <TextBlock Text="  Ждём подтверждения…" VerticalAlignment="Center" Style="{StaticResource Muted}" />
-                            <Button Style="{StaticResource GhostButton}" Content="Копировать" Command="{Binding CopyCodeCommand}" Margin="14,0,8,0" />
-                            <Button Style="{StaticResource GhostButton}" Content="Отмена" Command="{Binding CancelMicrosoftCommand}" />
+                            <TextBlock Text="{l:T '  Ждём подтверждения…'}" VerticalAlignment="Center" Style="{StaticResource Muted}" />
+                            <Button Style="{StaticResource GhostButton}" Content="{l:T 'Копировать'}" Command="{Binding CopyCodeCommand}" Margin="14,0,8,0" />
+                            <Button Style="{StaticResource GhostButton}" Content="{l:T 'Отмена'}" Command="{Binding CancelMicrosoftCommand}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
-                <TextBlock Text="Оффлайн-аккаунт" Style="{StaticResource H2}" Margin="0,18,0,6" />
+                <TextBlock Text="{l:T 'Оффлайн-аккаунт'}" Style="{StaticResource H2}" Margin="0,18,0,6" />
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="Добавить" Command="{Binding AddOfflineCommand}" Margin="8,0,0,0" />
-                    <TextBox Text="{Binding OfflineNick, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Оффлайн-ник" ToolTip="3–16 символов: латиница, цифры, _" />
+                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T 'Добавить'}" Command="{Binding AddOfflineCommand}" Margin="8,0,0,0" />
+                    <TextBox Text="{Binding OfflineNick, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Оффлайн-ник" ToolTip="{l:T '3–16 символов: латиница, цифры, _'}" />
                 </DockPanel>
-                <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" Text="Для одиночной игры и серверов в offline-mode. UUID генерируется из ника." />
+                <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" Text="{l:T 'Для одиночной игры и серверов в offline-mode. UUID генерируется из ника.'}" />
             </StackPanel>
         </Border>
 
@@ -80,7 +83,7 @@
                     <Image Source="/Assets/ui/frog_king.png" Height="52" Margin="0,0,12,0" />
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="Discord" Style="{StaticResource H1}" />
-                        <TextBlock Text="Тариф включается по вашей роли на нашем Discord-сервере. Играть можно и без входа." Style="{StaticResource Muted}" MaxWidth="360" />
+                        <TextBlock Text="{l:T 'Тариф включается по вашей роли на нашем Discord-сервере. Играть можно и без входа.'}" Style="{StaticResource Muted}" MaxWidth="360" />
                     </StackPanel>
                 </StackPanel>
 
@@ -97,25 +100,25 @@
                                     <TextBlock Text="ADMIN" FontWeight="Black" FontSize="11" Foreground="White" />
                                 </Border>
                             </StackPanel>
-                            <TextBlock Style="{StaticResource Muted}"><Run Text="Тариф: " /><Run Text="{Binding TierName, Mode=OneWay}" /></TextBlock>
+                            <TextBlock Style="{StaticResource Muted}"><Run Text="{l:T 'Тариф: '}" /><Run Text="{Binding TierName, Mode=OneWay}" /></TextBlock>
                         </StackPanel>
                     </StackPanel>
                     <TextBlock Text="{Binding DiscordHint}" Style="{StaticResource Muted}" Foreground="{DynamicResource WarnBrush}" Margin="0,10,0,0"
                                Visibility="{Binding DiscordHint, Converter={StaticResource VisibleIf}}" />
-                    <Button Style="{StaticResource GhostButton}" Content="Выйти из Discord" Command="{Binding LogoutDiscordCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                    <Button Style="{StaticResource GhostButton}" Content="{l:T 'Выйти из Discord'}" Command="{Binding LogoutDiscordCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" />
                 </StackPanel>
 
                 <StackPanel Margin="0,16,0,0" Visibility="{Binding DiscordLoggedIn, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
-                    <Button Style="{StaticResource AccentButton}" Background="#5865F2" Foreground="White" Content="Войти через Discord" HorizontalAlignment="Left"
+                    <Button Style="{StaticResource AccentButton}" Background="#5865F2" Foreground="White" Content="{l:T 'Войти через Discord'}" HorizontalAlignment="Left"
                             Command="{Binding LoginDiscordCommand}"
                             Visibility="{Binding DiscordWaiting, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
                     <StackPanel Orientation="Horizontal" Visibility="{Binding DiscordWaiting, Converter={StaticResource VisibleIf}}">
                         <Image Source="/Assets/ui/loader.png" Height="22" Style="{StaticResource Spinning}" />
-                        <TextBlock Text="  Подтвердите вход в открывшемся браузере…" VerticalAlignment="Center" Style="{StaticResource Muted}" />
-                        <Button Style="{StaticResource GhostButton}" Content="Отмена" Command="{Binding CancelDiscordCommand}" Margin="12,0,0,0" />
+                        <TextBlock Text="{l:T '  Подтвердите вход в открывшемся браузере…'}" VerticalAlignment="Center" Style="{StaticResource Muted}" />
+                        <Button Style="{StaticResource GhostButton}" Content="{l:T 'Отмена'}" Command="{Binding CancelDiscordCommand}" Margin="12,0,0,0" />
                     </StackPanel>
                     <TextBlock Style="{StaticResource Muted}" Margin="0,10,0,0"
-                               Text="Лаунчер увидит только ваш ник и роли на нашем сервере. Пароль от Discord лаунчер не получает." />
+                               Text="{l:T 'Лаунчер увидит только ваш ник и роли на нашем сервере. Пароль от Discord лаунчер не получает.'}" />
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -127,8 +130,8 @@
                 <StackPanel Orientation="Horizontal">
                     <Image Source="/Assets/ui/frog_king.png" Height="52" Margin="0,0,12,0" />
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="Аккаунт FrogLauncher" Style="{StaticResource H1}" />
-                        <TextBlock Text="Нужен только для подписки. Играть можно без него." Style="{StaticResource Muted}" />
+                        <TextBlock Text="{l:T 'Аккаунт FrogLauncher'}" Style="{StaticResource H1}" />
+                        <TextBlock Text="{l:T 'Нужен только для подписки. Играть можно без него.'}" Style="{StaticResource Muted}" />
                     </StackPanel>
                 </StackPanel>
 
@@ -139,24 +142,264 @@
                             <TextBlock Text="ADMIN" FontWeight="Black" FontSize="11" Foreground="White" />
                         </Border>
                     </StackPanel>
-                    <TextBlock Style="{StaticResource Muted}"><Run Text="Тариф: " /><Run Text="{Binding TierName, Mode=OneWay}" /></TextBlock>
-                    <Button Style="{StaticResource GhostButton}" Content="Выйти" Command="{Binding LauncherLogoutCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                    <TextBlock Style="{StaticResource Muted}"><Run Text="{l:T 'Тариф: '}" /><Run Text="{Binding TierName, Mode=OneWay}" /></TextBlock>
+                    <Button Style="{StaticResource GhostButton}" Content="{l:T 'Выйти'}" Command="{Binding LauncherLogoutCommand}" HorizontalAlignment="Left" Margin="0,12,0,0" />
                 </StackPanel>
 
                 <StackPanel Margin="0,16,0,0" Visibility="{Binding IsLoggedIn, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
-                    <TextBlock Text="Ник или email" Style="{StaticResource Muted}" Margin="0,0,0,4" />
+                    <TextBlock Text="{l:T 'Ник или email'}" Style="{StaticResource Muted}" Margin="0,0,0,4" />
                     <TextBox Text="{Binding Login, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Ник или email" />
                     <StackPanel Visibility="{Binding RegisterMode, Converter={StaticResource VisibleIf}}">
                         <TextBlock Text="Email" Style="{StaticResource Muted}" Margin="0,10,0,4" />
                         <TextBox Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" />
                     </StackPanel>
-                    <TextBlock Text="Пароль" Style="{StaticResource Muted}" Margin="0,10,0,4" />
+                    <TextBlock Text="{l:T 'Пароль'}" Style="{StaticResource Muted}" Margin="0,10,0,4" />
                     <PasswordBox x:Name="Password" AutomationProperties.Name="Пароль" />
-                    <CheckBox Style="{StaticResource Check}" Content="Я новенький — зарегистрироваться" IsChecked="{Binding RegisterMode}" Margin="0,12,0,0" />
-                    <Button Style="{StaticResource AccentButton}" Content="Продолжить" HorizontalAlignment="Left" Margin="0,14,0,0"
+                    <CheckBox Style="{StaticResource Check}" Content="{l:T 'Я новенький — зарегистрироваться'}" IsChecked="{Binding RegisterMode}" Margin="0,12,0,0" />
+                    <Button Style="{StaticResource AccentButton}" Content="{l:T 'Продолжить'}" HorizontalAlignment="Left" Margin="0,14,0,0"
                             Command="{Binding LauncherLoginCommand}" CommandParameter="{Binding ElementName=Password}" />
                 </StackPanel>
             </StackPanel>
         </Border>
     </Grid>
+    </TabItem>
+
+    <!-- ================= Статистика ================= -->
+    <TabItem Header="{l:T '📊 Статистика'}">
+        <ScrollViewer DataContext="{Binding Stats}" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,4,8,8">
+                <Border Style="{StaticResource Card}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="{Binding BadgeEmoji}" FontSize="48" VerticalAlignment="Center" Margin="0,0,16,0" />
+                        <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right">
+                            <TextBlock Text="{Binding TotalText}" Style="{StaticResource H1}" HorizontalAlignment="Right" />
+                            <TextBlock Text="{l:T 'всего в игре'}" Style="{StaticResource Muted}" HorizontalAlignment="Right" />
+                        </StackPanel>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding BadgeTitle}" Style="{StaticResource H1}" />
+                            <ProgressBar Value="{Binding BadgePercent, Mode=OneWay}" Maximum="100" Height="8" Margin="0,8,24,6" />
+                            <TextBlock Text="{Binding BadgeProgress}" Style="{StaticResource Muted}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Tiles}" Margin="0,12,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Value}" Style="{StaticResource H2}" />
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding ChartMax}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Bottom" />
+                            <TextBlock Text="{l:T 'Время в игре за 14 дней'}" Style="{StaticResource H2}" />
+                        </DockPanel>
+                        <Border BorderBrush="{DynamicResource LineBrush}" BorderThickness="0,0,0,1" Height="130" Margin="0,14,0,0">
+                            <ItemsControl ItemsSource="{Binding Days}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <!-- Прозрачная зона на всю высоту — подсказка видна и над низким столбиком. -->
+                                        <Grid Background="Transparent" Margin="1,0" ToolTip="{Binding Tooltip}">
+                                            <Border Height="{Binding Height}" MaxWidth="26" VerticalAlignment="Bottom" CornerRadius="4,4,0,0"
+                                                    Background="{DynamicResource AccentBrush}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding Days}" Margin="0,4,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock x:Name="L" Text="{Binding Label}" FontSize="11" HorizontalAlignment="Center" Foreground="{DynamicResource MutedBrush}" />
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsToday}" Value="True">
+                                            <Setter TargetName="L" Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                            <Setter TargetName="L" Property="FontWeight" Value="Bold" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{l:T 'Пока пусто — запустите игру из лаунчера, и здесь появится ваша активность 🐸'}" Style="{StaticResource Muted}"
+                                   Margin="0,10,0,0" Visibility="{Binding IsEmpty, Converter={StaticResource VisibleIf}}" />
+                    </StackPanel>
+                </Border>
+
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                        <StackPanel>
+                            <TextBlock Text="{l:T 'В мирах Minecraft'}" Style="{StaticResource H2}" />
+                            <TextBlock Text="{l:T 'Из статистики всех миров всех версий'}" Style="{StaticResource Muted}" FontSize="12" Margin="0,2,0,8" />
+                            <ItemsControl ItemsSource="{Binding McTiles}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Columns="3" /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,6,8,6">
+                                            <TextBlock Text="{Binding Value}" Style="{StaticResource H2}" />
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" FontSize="12" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="{l:T 'Любимые версии'}" Style="{StaticResource H2}" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding TopVersions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,4">
+                                            <StackPanel DockPanel.Dock="Right">
+                                                <TextBlock Text="{Binding Time}" HorizontalAlignment="Right" />
+                                                <TextBlock Text="{Binding Sessions}" Style="{StaticResource Muted}" FontSize="12" HorizontalAlignment="Right" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{l:T 'Появятся после первых игр'}" Style="{StaticResource Muted}"
+                                       Visibility="{Binding TopVersions.Count, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                <TextBlock Text="{Binding AdvSummary}" Style="{StaticResource H1}" HorizontalAlignment="Right" />
+                                <TextBlock Text="{l:T 'выполнено в этом мире'}" Style="{StaticResource Muted}" FontSize="12" HorizontalAlignment="Right"
+                                           Visibility="{Binding AdvWorld, Converter={StaticResource VisibleIf}}" />
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="{l:T 'Достижения'}" Style="{StaticResource H2}" />
+                                <TextBlock Text="{l:T 'Список и названия — из самой игры, прогресс — из файла мира'}" Style="{StaticResource Muted}" FontSize="12" Margin="0,2,0,0" />
+                            </StackPanel>
+                        </DockPanel>
+                        <ProgressBar Value="{Binding AdvPercent, Mode=OneWay}" Maximum="100" Height="8" Margin="0,10,0,10"
+                                     Visibility="{Binding AdvWorld, Converter={StaticResource VisibleIf}}" />
+                        <WrapPanel Visibility="{Binding AdvWorld, Converter={StaticResource VisibleIf}}">
+                            <ComboBox ItemsSource="{Binding AdvWorlds}" SelectedItem="{Binding AdvWorld}" MinWidth="260" Margin="0,0,8,0"
+                                      AutomationProperties.Name="Мир">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock><Run Text="{Binding Name, Mode=OneWay}" /><Run Text=" · " Foreground="{DynamicResource MutedBrush}" /><Run Text="{Binding Instance.Name, Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" /></TextBlock>
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                            <ComboBox ItemsSource="{Binding AdvCategories}" SelectedItem="{Binding AdvCategory}" DisplayMemberPath="Title" MinWidth="160" Margin="0,0,12,0"
+                                      AutomationProperties.Name="Вкладка" />
+                            <CheckBox Style="{StaticResource Check}" Content="{l:T 'Только невыполненные'}" IsChecked="{Binding AdvOnlyLeft}" VerticalAlignment="Center" />
+                        </WrapPanel>
+                        <ItemsControl ItemsSource="{Binding Advancements}" Margin="0,10,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border x:Name="Row" Margin="0,0,8,8" Padding="10,8" CornerRadius="8" Background="{DynamicResource SurfaceBrush}" Opacity="0.75"
+                                            ToolTip="{Binding Description}">
+                                        <DockPanel>
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding ProgressText}" Style="{StaticResource Muted}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Top" />
+                                            <StackPanel>
+                                                <TextBlock TextTrimming="CharacterEllipsis" FontWeight="SemiBold"><Run Text="{Binding Frame, Mode=OneWay}" /><Run Text=" " /><Run Text="{Binding Title, Mode=OneWay}" /></TextBlock>
+                                                <TextBlock Text="{Binding Description}" Style="{StaticResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="4" Margin="0,6,0,0" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsDone}" Value="True">
+                                            <Setter TargetName="Row" Property="Opacity" Value="1" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{l:T 'Пока нет миров с достижениями — зайдите в одиночный мир на версии 1.12 или новее 🐸'}" Style="{StaticResource Muted}" TextWrapping="Wrap"
+                                   Visibility="{Binding AdvWorld, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </TabItem>
+
+    <!-- ================= Скриншоты ================= -->
+    <TabItem Header="{l:T '🖼 Скриншоты'}">
+        <Grid DataContext="{Binding Screenshots}" Margin="0,4,8,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="1.3*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.ColumnSpan="2" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,20,0,0"
+                       Visibility="{Binding IsEmpty, Converter={StaticResource VisibleIf}}"
+                       Text="{l:T 'Скриншотов пока нет. В игре нажмите F2 — снимок появится здесь, из любой версии.'}" />
+            <TextBlock Grid.ColumnSpan="2" Style="{StaticResource Muted}" Margin="0,20,0,0" Text="{l:T 'Загружаем скриншоты…'}"
+                       Visibility="{Binding IsLoading, Converter={StaticResource VisibleIf}}" />
+            <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="0,0,10,0"
+                     Visibility="{Binding IsEmpty, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate><UniformGrid Columns="2" VerticalAlignment="Top" /></ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border CornerRadius="8" ClipToBounds="True" Margin="2" ToolTip="{Binding Caption}">
+                            <Image Source="{Binding Thumb}" Stretch="UniformToFill" Height="96" />
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <Border Grid.Column="1" Style="{StaticResource Card}"
+                    Visibility="{Binding Selected, Converter={StaticResource VisibleIf}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding Selected.Caption}" Style="{StaticResource Muted}" Margin="0,0,0,8" />
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                        <WrapPanel>
+                            <Button Style="{StaticResource AccentButton}" Content="{l:T '🐸 Поделиться'}" Command="{Binding ShareCommand}" Margin="0,0,8,6"
+                                    ToolTip="{l:T 'Карточка 1080×1920 для TikTok, Reels и Shorts'}" />
+                            <Button Style="{StaticResource GhostButton}" Content="{l:T 'Открыть'}" Command="{Binding OpenCommand}" Margin="0,0,8,6" />
+                            <Button Style="{StaticResource GhostButton}" Content="{l:T 'В папке'}" Command="{Binding ShowInFolderCommand}" Margin="0,0,8,6" />
+                            <Button Style="{StaticResource DangerButton}" Content="{l:T 'Удалить'}" Command="{Binding DeleteCommand}" Margin="0,0,8,6" />
+                        </WrapPanel>
+                        <StackPanel Visibility="{Binding LastCard, Converter={StaticResource VisibleIf}}" Margin="0,6,0,0">
+                            <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" FontSize="12"
+                                       Text="{l:T 'Карточка скопирована в буфер. Для TikTok откроем страницу загрузки и папку с файлом — перетащите его в окно браузера.'}" />
+                            <WrapPanel Margin="0,6,0,0">
+                                <Button Style="{StaticResource GhostButton}" Content="{l:T 'Открыть TikTok'}" Command="{Binding OpenTikTokCommand}" Margin="0,0,8,0" />
+                                <Button Style="{StaticResource GhostButton}" Content="{l:T 'Показать карточку'}" Command="{Binding OpenCardCommand}" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </StackPanel>
+                    <Image Source="{Binding Preview}" Stretch="Uniform" />
+                </DockPanel>
+            </Border>
+        </Grid>
+    </TabItem>
+    </TabControl>
 </UserControl>

@@ -262,6 +262,219 @@ public class LaunchTests
     }
 
     [Fact]
+    public void Options_file_keeps_unknown_keys_and_order()
+    {
+        var dir = System.IO.Directory.CreateTempSubdirectory("frog-opt-").FullName;
+        try
+        {
+            System.IO.File.WriteAllLines(System.IO.Path.Combine(dir, "options.txt"), new[]
+            {
+                "version:3955", "sodium_mod_key:42", "renderDistance:12", "fov:0.0", "resourcePacks:[\"vanilla\",\"file/Faithful.zip\"]",
+            });
+            var o = OptionsFile.Load(dir);
+            o.SetInt("renderDistance", 8);
+            o.SetDouble("fov", McValues.FovToOption(90));
+            o.SetBool("autoJump", false);
+            o.Save();
+
+            var lines = System.IO.File.ReadAllLines(System.IO.Path.Combine(dir, "options.txt"));
+            Assert.Equal("version:3955", lines[0]);
+            Assert.Equal("sodium_mod_key:42", lines[1]);       // ключ мода не потерялся
+            Assert.Equal("renderDistance:8", lines[2]);        // порядок сохранён
+            Assert.Equal("fov:0.5", lines[3]);                 // 90° = (90-70)/40
+            Assert.Equal("autoJump:false", lines[^1]);         // новый ключ — в конец
+            Assert.Equal(new[] { "vanilla", "file/Faithful.zip" }, OptionsFile.Load(dir).GetResourcePacks());
+        }
+        finally
+        {
+            System.IO.Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void Options_quoted_values_keep_quotes()
+    {
+        var dir = System.IO.Directory.CreateTempSubdirectory("frog-opt-").FullName;
+        try
+        {
+            System.IO.File.WriteAllLines(System.IO.Path.Combine(dir, "options.txt"), new[] { "renderClouds:\"true\"", "lang:ru_ru" });
+            var o = OptionsFile.Load(dir);
+            Assert.Equal("true", o.GetString("renderClouds"));
+            o.SetString("renderClouds", "fast");
+            o.SetString("lang", "en_us");
+            Assert.Equal("\"fast\"", o.Get("renderClouds"));   // 1.19+: в кавычках, как было
+            Assert.Equal("en_us", o.Get("lang"));               // без кавычек, как было
+        }
+        finally
+        {
+            System.IO.Directory.Delete(dir, true);
+        }
+    }
+
+    [Theory]
+    [InlineData(0.0, 70)]
+    [InlineData(-1.0, 30)]
+    [InlineData(1.0, 110)]
+    public void Fov_conversion(double option, int fov)
+    {
+        Assert.Equal(fov, McValues.FovFromOption(option));
+        Assert.Equal(option, McValues.FovToOption(fov), 3);
+    }
+
+    [Theory]
+    [InlineData(System.Windows.Input.Key.W, "key.keyboard.w", "W")]
+    [InlineData(System.Windows.Input.Key.LeftShift, "key.keyboard.left.shift", "Left Shift")]
+    [InlineData(System.Windows.Input.Key.F5, "key.keyboard.f5", "F5")]
+    [InlineData(System.Windows.Input.Key.D3, "key.keyboard.3", "3")]
+    public void Keys_map_to_minecraft_names(System.Windows.Input.Key key, string mc, string label)
+    {
+        Assert.Equal(mc, McValues.FromWpfKey(key));
+        Assert.Equal(label, McValues.KeyLabel(mc));
+    }
+
+    [Fact]
+    public void Pc_classification_and_ram_recommendation()
+    {
+        static HardwareInfo Pc(double ramGb, int cores, string gpu, double vramGb) => new(
+            (long)(ramGb * 1024 * 1024 * 1024), 0, cores, "cpu", 3000,
+            new[] { new GpuInfo(gpu, (long)(vramGb * 1024 * 1024 * 1024), HardwareService.IsIntegrated(gpu)) }, 1920, 1080);
+
+        Assert.Equal(PresetKind.Performance, HardwareService.Classify(Pc(8, 4, "Intel(R) UHD Graphics 620", 1)));
+        Assert.Equal(PresetKind.Balanced, HardwareService.Classify(Pc(16, 6, "NVIDIA GeForce GTX 1660 SUPER", 6)));
+        Assert.Equal(PresetKind.Quality, HardwareService.Classify(Pc(32, 16, "NVIDIA GeForce RTX 4070", 12)));
+        Assert.True(HardwareService.IsIntegrated("AMD Radeon(TM) Graphics"));
+        Assert.False(HardwareService.IsIntegrated("AMD Radeon RX 7800 XT"));
+        Assert.Equal(4096, HardwareService.RecommendedRamMb(16));
+        // Пресеты не предлагают больше памяти, чем безопасно для ПК.
+        Assert.All(HardwareService.Presets(Pc(4, 2, "Intel HD", 0.5)), p => Assert.True(p.RamMb <= 2048));
+    }
+
+    [Fact]
+    public void Gc_and_min_ram_in_command_line()
+    {
+        var v = System.Text.Json.JsonSerializer.Deserialize<VersionInfo>("""{ "id": "1.20.1", "mainClass": "M", "libraries": [] }""", Json.Mojang)!;
+        var acc = new GameAccount { Name = "F", Uuid = "0" };
+
+        var zgc = LaunchService.BuildArguments(v, new Instance { Directory = "C:\\f", RamMb = 6144, RamMinMb = 2048, Gc = "zgc" }, acc, "n", false, 21);
+        Assert.Contains("-Xms2048M", zgc);
+        Assert.Contains("-XX:+UseZGC", zgc);
+        Assert.Contains("-XX:+ZGenerational", zgc);
+
+        // На Java 8 ZGC нет — остаётся G1, игра не падает.
+        var old = LaunchService.BuildArguments(v, new Instance { Directory = "C:\\f", RamMb = 2048, Gc = "zgc" }, acc, "n", false, 8);
+        Assert.DoesNotContain("-XX:+UseZGC", old);
+        Assert.Contains("-XX:+UseG1GC", old);
+    }
+
+    [Fact]
+    public void Embedded_server_list_is_valid()
+    {
+        var asm = typeof(ServerCatalog).Assembly;
+        Assert.Contains("FrogLauncher.servers.json", asm.GetManifestResourceNames());
+        using var s = asm.GetManifestResourceStream("FrogLauncher.servers.json")!;
+        var list = ServerCatalog.Parse(new System.IO.StreamReader(s).ReadToEnd());
+        Assert.True(list.Count >= 15);
+        Assert.All(list, e => Assert.False(string.IsNullOrWhiteSpace(e.Address)));
+    }
+
+    [Theory]
+    [InlineData("2.2.0", "2.1.0", true)]
+    [InlineData("2.1.0", "2.1.0", false)]
+    [InlineData("2.0.9", "2.1.0", false)]
+    [InlineData("2.2.0", "2.2.0-beta.3", true)]    // релиз новее своей беты
+    [InlineData("2.2.0-beta.1", "2.2.0", false)]
+    [InlineData("2.2.0-beta.2", "2.2.0-beta.1", true)]
+    [InlineData("10.0.0", "9.9.9", true)]           // числами, а не строками
+    public void Update_version_comparison(string candidate, string current, bool newer) =>
+        Assert.Equal(newer, UpdateService.IsNewer(candidate, current));
+
+    /// <summary>Как в настоящем репозитории: GitHub отдаёт v1.0.1 раньше V2.0.0.</summary>
+    [Fact]
+    public void Update_picks_highest_version_regardless_of_order()
+    {
+        static string Rel(string tag, bool pre, string sha) => $$"""
+            { "tag_name": "{{tag}}", "prerelease": {{(pre ? "true" : "false")}}, "draft": false, "html_url": "u", "body": "",
+              "assets": [ { "name": "FrogLauncherSetup.exe", "browser_download_url": "https://github.com/x/{{tag}}", "digest": "sha256:{{sha}}" } ] }
+            """;
+        var releases = System.Text.Json.Nodes.JsonNode.Parse(
+            $"[{Rel("v1.0.1", false, "aa")},{Rel("V2.0.0", false, "bb")},{Rel("v2.3.0-beta.1", true, "cc")},{Rel("v1.0.0", true, "dd")}]")!.AsArray();
+
+        var stable = UpdateService.PickUpdate(releases, "1.0.1", beta: false);
+        Assert.Equal("2.0.0", stable!.Version);
+        Assert.Equal("bb", stable.Sha256);
+
+        Assert.Equal("2.3.0-beta.1", UpdateService.PickUpdate(releases, "2.1.0", beta: true)!.Version);
+        Assert.Null(UpdateService.PickUpdate(releases, "2.1.0", beta: false)); // 2.0.0 старее текущей
+    }
+
+    [Theory]
+    [InlineData(System.Windows.Input.Key.Enter, System.Windows.Input.ModifierKeys.Control, "Ctrl+Enter")]
+    [InlineData(System.Windows.Input.Key.OemComma, System.Windows.Input.ModifierKeys.Control, "Ctrl+,")]
+    [InlineData(System.Windows.Input.Key.M, System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Shift, "Ctrl+Shift+M")]
+    [InlineData(System.Windows.Input.Key.F5, System.Windows.Input.ModifierKeys.None, "F5")]
+    public void Hotkey_gestures_format(System.Windows.Input.Key key, System.Windows.Input.ModifierKeys mods, string expected)
+    {
+        Assert.Equal(expected, HotkeyService.Format(key, mods));
+        Assert.Contains(HotkeyService.Actions, a => a.Default == expected);
+    }
+
+    [Fact]
+    public void Hotkey_modifier_alone_is_not_a_gesture() =>
+        Assert.Null(HotkeyService.Format(System.Windows.Input.Key.LeftCtrl, System.Windows.Input.ModifierKeys.Control));
+
+    [Theory]
+    [InlineData("mc.hypixel.net", "mc.hypixel.net", 25565)]
+    [InlineData("play.example.com:25570", "play.example.com", 25570)]
+    [InlineData("1.2.3.4", "1.2.3.4", 25565)]
+    public void Server_address_parsing(string address, string host, int port) =>
+        Assert.Equal((host, port), ServerPing.ParseAddress(address));
+
+    [Fact]
+    public void Server_motd_strips_colors_and_reads_components()
+    {
+        var motd = ServerPing.MotdText(System.Text.Json.Nodes.JsonNode.Parse(
+            """{ "text": "§aFrog §lServer", "extra": [ { "text": "\n§eНовый режим!" } ] }"""));
+        Assert.Equal("Frog Server\nНовый режим!", motd);
+        Assert.Equal("1.8-26.3", ServerPing.StripColors("§f§f1.8-26.3"));
+    }
+
+    [Fact]
+    public void Varint_roundtrip()
+    {
+        foreach (var n in new[] { 0, 1, 127, 128, 255, 25565, 2097151, -1 })
+        {
+            using var ms = new System.IO.MemoryStream();
+            ServerPing.WriteVarInt(ms, n);
+            ms.Position = 0;
+            Assert.Equal(n, ServerPing.ReadVarInt(ms));
+        }
+    }
+
+    [Fact]
+    public void Quick_play_for_modern_versions_and_server_flag_for_old()
+    {
+        var acc = new GameAccount { Name = "F", Uuid = "0" };
+        var modern = System.Text.Json.JsonSerializer.Deserialize<VersionInfo>("""
+            { "id": "1.20.1", "mainClass": "M", "libraries": [],
+              "arguments": { "game": [ "--username", "${auth_player_name}",
+                { "rules": [ { "action": "allow", "features": { "is_quick_play_multiplayer": true } } ],
+                  "value": [ "--quickPlayMultiplayer", "${quickPlayMultiplayer}" ] } ], "jvm": [] } }
+            """, Json.Mojang)!;
+        var a = LaunchService.BuildArguments(modern, new Instance { Directory = "C:\\f" }, acc, "n", false, 17, "mc.hypixel.net");
+        Assert.Equal("mc.hypixel.net", a[a.IndexOf("--quickPlayMultiplayer") + 1]);
+        Assert.DoesNotContain("--server", a);
+
+        var old = System.Text.Json.JsonSerializer.Deserialize<VersionInfo>("""{ "id": "1.12.2", "mainClass": "M", "libraries": [], "minecraftArguments": "--username ${auth_player_name}" }""", Json.Mojang)!;
+        var b = LaunchService.BuildArguments(old, new Instance { Directory = "C:\\f" }, acc, "n", false, 8, "play.example.com:25570");
+        Assert.Equal("play.example.com", b[b.IndexOf("--server") + 1]);
+        Assert.Equal("25570", b[b.IndexOf("--port") + 1]);
+
+        // Без сервера Quick Play не включается.
+        var none = LaunchService.BuildArguments(modern, new Instance { Directory = "C:\\f" }, acc, "n", false);
+        Assert.DoesNotContain("--quickPlayMultiplayer", none);
+    }
+
+    [Fact]
     public void NeoForge_version_prefix() =>
         Assert.Equal("21.1.", ModLoaderService.NeoForgePrefix("1.21.1"));
 

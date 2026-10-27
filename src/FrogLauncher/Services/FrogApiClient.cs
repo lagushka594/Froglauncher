@@ -86,7 +86,7 @@ public sealed class SessionStore(IHttpClientFactory httpFactory, ILogger<Session
 
             resp.EnsureSuccessStatusCode();
             var pair = await resp.Content.ReadFromJsonAsync<TokenPair>(FrogJson.Options, ct)
-                       ?? throw new ApiException("Пустой ответ при обновлении сессии");
+                       ?? throw new ApiException(L.T("Пустой ответ при обновлении сессии"));
             Set(pair);
             return pair.AccessToken;
         }
@@ -180,9 +180,9 @@ public sealed class FrogApiClient(IHttpClientFactory httpFactory, SessionStore s
         return await ReadAsync<EntitlementsDto>(resp, ct);
     }
 
-    public async Task<CheckoutResponse> CheckoutAsync(string tier, BillingPeriod period, CancellationToken ct)
+    public async Task<CheckoutResponse> CheckoutAsync(string tier, BillingPeriod period, string? promoCode, CancellationToken ct)
     {
-        using var resp = await Http.PostAsJsonAsync("billing/checkout", new CheckoutRequest(tier, period), FrogJson.Options, ct);
+        using var resp = await Http.PostAsJsonAsync("billing/checkout", new CheckoutRequest(tier, period, PromoCode: promoCode), FrogJson.Options, ct);
         return await ReadAsync<CheckoutResponse>(resp, ct);
     }
 
@@ -201,7 +201,7 @@ public sealed class FrogApiClient(IHttpClientFactory httpFactory, SessionStore s
     private static async Task<T> ReadAsync<T>(HttpResponseMessage resp, CancellationToken ct)
     {
         if (resp.IsSuccessStatusCode)
-            return await resp.Content.ReadFromJsonAsync<T>(FrogJson.Options, ct) ?? throw new ApiException("Пустой ответ сервера");
+            return await resp.Content.ReadFromJsonAsync<T>(FrogJson.Options, ct) ?? throw new ApiException(L.T("Пустой ответ сервера"));
 
         string? detail = null;
         try
@@ -213,9 +213,9 @@ public sealed class FrogApiClient(IHttpClientFactory httpFactory, SessionStore s
 
         throw new ApiException(detail ?? resp.StatusCode switch
         {
-            HttpStatusCode.Unauthorized => "Нужно войти в аккаунт FrogLauncher",
-            HttpStatusCode.TooManyRequests => "Слишком много попыток, подождите минуту",
-            _ => $"Ошибка сервера ({(int)resp.StatusCode})",
+            HttpStatusCode.Unauthorized => L.T("Нужно войти в аккаунт FrogLauncher"),
+            HttpStatusCode.TooManyRequests => L.T("Слишком много попыток, подождите минуту"),
+            _ => L.T($"Ошибка сервера ({(int)resp.StatusCode})"),
         }, resp.StatusCode);
     }
 }

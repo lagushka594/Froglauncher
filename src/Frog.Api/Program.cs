@@ -36,6 +36,9 @@ try
 
     builder.Services.AddSingleton(TimeProvider.System);
     builder.Services.AddSingleton(TierCatalog.LoadFromFile(Path.Combine(AppContext.BaseDirectory, "tiers.json")));
+    // Тот же promos.json, что читает лаунчер: акции и промокоды; нет файла — скидок нет.
+    var promosFile = Path.Combine(AppContext.BaseDirectory, "promos.json");
+    builder.Services.AddSingleton(File.Exists(promosFile) ? PromoCatalog.Parse(File.ReadAllText(promosFile)) : new PromoCatalog(new PromoFile()));
     builder.Services.AddScoped<JwtService>();
     builder.Services.AddScoped<EntitlementService>();
     builder.Services.AddScoped<AccountService>();

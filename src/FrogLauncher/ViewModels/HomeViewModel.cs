@@ -1,4 +1,5 @@
-using System.Collections.ObjectModel;
+using FrogLauncher.Core;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -21,6 +22,10 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     private readonly SettingsService _settings;
     private readonly DiscordPresenceService _presence;
     private readonly ToastService _toasts;
+    private readonly PlayStatsService _stats;
+    private readonly TrayService _tray;
+    private readonly WorldService _worlds;
+    private System.Windows.Threading.DispatcherTimer? _reminder;
     private readonly ILogger<HomeViewModel> _log;
     private CancellationTokenSource? _cts;
 
@@ -40,16 +45,77 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     [ObservableProperty] private string _lastLogLine = "";
 
     public bool ShowStop => IsBusy || IsRunning;
-    [ObservableProperty] private CrashInfo? _crash;
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowNewYearPanel))] private CrashInfo? _crash;
+
+    // ---------- Сезоны ----------
+    private NewYearService? _newYear;
+    private ThemeService? _themes;
+    private string _playlistUrl = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(ShowNewYearPanel))] private bool _isNewYearPeriod;
+    [ObservableProperty] private bool _isNewYearTheme;
+    [ObservableProperty] private bool _isSpringTheme;
+    [ObservableProperty] private int _treeDays;
+    [ObservableProperty] private bool _hasGarland;
+    [ObservableProperty] private bool _hasStar;
+    [ObservableProperty] private bool _canClaimGift;
+    [ObservableProperty] private string _couponText = "";
+
+    public bool ShowNewYearPanel => IsNewYearPeriod && Crash is null;
+    public string TreeText => L.T($"🎄 Ёлка украшается за дни в лаунчере: {TreeDays} · {NewYearService.GarlandDays} — гирлянда, {NewYearService.StarDays} — звезда");
+
+    /// <summary>Сезонные части главной (вызывается из конструктора и при смене темы).</summary>
+    public void AttachSeasons(NewYearService newYear, ThemeService themes, string playlistUrl)
+    {
+        _newYear = newYear;
+        _themes = themes;
+        _playlistUrl = playlistUrl;
+        themes.SeasonChanged += RefreshSeason;
+        newYear.Changed += RefreshSeason;
+        RefreshSeason();
+    }
+
+    private void RefreshSeason()
+    {
+        if (_newYear is null || _themes is null) return;
+        var today = AppClock.Today;
+        IsNewYearPeriod = _newYear.IsActive(today);
+        IsNewYearTheme = _themes.ActiveSeason == Season.NewYear;
+        IsSpringTheme = _themes.ActiveSeason == Season.Spring;
+        TreeDays = _newYear.Days(today);
+        HasGarland = NewYearService.HasGarland(TreeDays);
+        HasStar = NewYearService.HasStar(TreeDays);
+        CanClaimGift = _newYear.CanClaim(today);
+        var coupon = _newYear.ActiveCoupon(today);
+        CouponText = coupon > 0
+            ? L.T($"Ваш новогодний купон: −{coupon}% на подписку до 10 января. Он сам попадёт в заказ при покупке.")
+            : L.T("Заходите каждый день — купон на скидку растёт: 3% в первый день и +1% за каждый следующий (до 15%).");
+        OnPropertyChanged(nameof(TreeText));
+    }
+
+    [RelayCommand]
+    private void ClaimGift()
+    {
+        if (_newYear is null) return;
+        var before = _newYear.ActiveCoupon(AppClock.Today);
+        var now = _newYear.ClaimGift(AppClock.Today);
+        _toasts.Show(now > before ? L.T($"🎁 Подарок дня! Купон теперь −{now}%") : L.T("Сегодня подарок уже получен — приходите завтра 🎄"), ToastKind.Success, 5);
+        RefreshSeason();
+    }
+
+    [RelayCommand]
+    private void OpenPlaylist() => Shell.Open(_playlistUrl);
     [ObservableProperty] private string? _mclogsUrl;
     [ObservableProperty] private bool _showAdBanner;
     [ObservableProperty] private string _mascot = "/Assets/ui/frog_idle.png";
-    [ObservableProperty] private string _accountLabel = "Аккаунт не выбран";
+    [ObservableProperty] private string _accountLabel = L.T("Аккаунт не выбран");
 
     public HomeViewModel(InstanceService instances, LaunchService launcher, GameAuthService accounts,
         EntitlementService entitlements, DownloadService downloads, SettingsService settings,
-        DiscordPresenceService presence, ToastService toasts, ILogger<HomeViewModel> log)
+        DiscordPresenceService presence, ToastService toasts, PlayStatsService stats, TrayService tray, WorldService worlds, ILogger<HomeViewModel> log)
     {
+        _worlds = worlds;
+        _stats = stats;
+        _tray = tray;
         _instances = instances;
         _launcher = launcher;
         _accounts = accounts;
@@ -91,24 +157,52 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
 
     private bool CanPlay => !IsBusy && !IsRunning;
 
+    /// <summary>Сервер для автоподключения при следующем запуске (из вкладки «Серверы»).</summary>
+    private string? _pendingServer;
+
+    /// <summary>Запуск конкретной версии (из командной палитры).</summary>
+    public async Task PlayByIdAsync(string id)
+    {
+        await LoadAsync();
+        SelectedInstance = Instances.FirstOrDefault(i => i.Id == id) ?? SelectedInstance;
+        if (PlayCommand.CanExecute(null)) await PlayCommand.ExecuteAsync(null);
+        else _toasts.Show(L.T("Игра уже запущена или загружается"), ToastKind.Info);
+    }
+
+    /// <summary>Запустить версию и сразу подключиться к серверу.</summary>
+    public async Task PlayOnServerAsync(Instance inst, string server)
+    {
+        await LoadAsync();
+        SelectedInstance = Instances.FirstOrDefault(i => i.Id == inst.Id) ?? SelectedInstance;
+        _pendingServer = server;
+        if (PlayCommand.CanExecute(null)) await PlayCommand.ExecuteAsync(null);
+        else
+        {
+            _pendingServer = null;
+            _toasts.Show(L.T("Игра уже запущена или загружается"), ToastKind.Info);
+        }
+    }
+
     /// <summary>Запуск игры. Подписка здесь НЕ проверяется — играть можно всегда.</summary>
     [RelayCommand(CanExecute = nameof(CanPlay))]
     private async Task PlayAsync()
     {
         if (SelectedInstance is not { } inst)
         {
-            _toasts.Show("Добавьте версию в «Каталоге»", ToastKind.Info);
+            _toasts.Show(L.T("Добавьте версию в «Каталоге»"), ToastKind.Info);
             WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Catalog));
             return;
         }
 
         if (_accounts.Selected is not { } account)
         {
-            _toasts.Show("Добавьте аккаунт в «Профиле» — подойдёт и оффлайн-ник", ToastKind.Info);
+            _toasts.Show(L.T("Добавьте аккаунт в «Профиле» — подойдёт и оффлайн-ник"), ToastKind.Info);
             WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Profile));
             return;
         }
 
+        var server = _pendingServer;
+        _pendingServer = null;
         IsBusy = true;
         Crash = null;
         MclogsUrl = null;
@@ -120,27 +214,31 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         var progress = new Progress<DownloadProgress>(p =>
         {
             Progress.Apply(p);
-            _ = _presence.SetAsync(new PresenceState($"Готовит {inst.DisplayVersion}",
-                p.TotalBytes > 0 ? $"{p.Stage}: {p.Percent:0}%" : p.Stage, SmallImage: "download", SmallText: "Загрузка"));
+            _ = _presence.SetAsync(new PresenceState(L.T($"Готовит {inst.DisplayVersion}"),
+                p.TotalBytes > 0 ? $"{p.Stage}: {p.Percent:0}%" : p.Stage, SmallImage: "download", SmallText: L.T("Загрузка")));
         });
 
         try
         {
             var session = await _launcher.LaunchAsync(inst, account,
-                _entitlements.IsAllowed(EntitlementKeys.JvmAutotune), progress, _cts.Token);
+                _entitlements.IsAllowed(EntitlementKeys.JvmAutotune), progress, _cts.Token, server);
             _instances.Save(inst);
             IsRunning = true;
+            _stats.SessionStarted(inst, server);
+            _tray.SetGameRunning(true);
+            StartPlaytimeReminder();
             Mascot = "/Assets/ui/frog_cool.png";
             await _presence.SetAsync(new PresenceState(
-                $"Играет в Minecraft {inst.GameVersion}",
-                inst.Loader == LoaderType.Vanilla ? inst.Name : $"{inst.Name} · {inst.Loader}",
+                L.T($"Играет в Minecraft {inst.GameVersion}"),
+                server is not null ? L.T($"На сервере {server}")
+                    : inst.Loader == LoaderType.Vanilla ? inst.Name : $"{inst.Name} · {inst.Loader}",
                 session.StartedAt, SmallImage: "playing", SmallText: account.Name));
 
             if (_settings.Current.CloseOnLaunch) Application.Current.MainWindow!.WindowState = WindowState.Minimized;
         }
         catch (OperationCanceledException)
         {
-            _toasts.Show("Запуск отменён");
+            _toasts.Show(L.T("Запуск отменён"));
             Mascot = "/Assets/ui/frog_idle.png";
             await _presence.SetIdleAsync();
         }
@@ -175,7 +273,7 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         {
             MclogsUrl = await _launcher.UploadToMclogsAsync(Crash, CancellationToken.None);
             Clipboard.SetText(MclogsUrl);
-            _toasts.Show("Ссылка на лог скопирована 🐸", ToastKind.Success);
+            _toasts.Show(L.T("Ссылка на лог скопирована 🐸"), ToastKind.Success);
         }
         catch (Exception ex)
         {
@@ -198,12 +296,46 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     [RelayCommand]
     private static void OpenSubscription() => WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Subscription));
 
+    /// <summary>Каждые N часов непрерывной игры — уведомление в трее (настраивается).</summary>
+    private void StartPlaytimeReminder()
+    {
+        var hours = _settings.Current.PlaytimeReminderHours;
+        if (hours <= 0) return;
+        var played = 0;
+        _reminder = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromHours(hours) };
+        _reminder.Tick += (_, _) =>
+        {
+            played += hours;
+            _tray.Notify(L.T($"Вы играете уже {played} ч 🐸"), L.T("Самое время размяться, попить воды и дать глазам отдохнуть."));
+        };
+        _reminder.Start();
+    }
+
+    /// <summary>Автобэкап миров, в которых играли (раз в сутки): при запуске лаунчера и после выхода из игры.</summary>
+    public async Task AutoBackupAsync(IEnumerable<Instance>? only = null)
+    {
+        try
+        {
+            var n = await Task.Run(() => _worlds.AutoBackupAll(only ?? _instances.List()));
+            if (n > 0) _log.LogInformation("Автобэкап: сохранено миров — {Count}", n);
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            _log.LogWarning(ex, "Автобэкап не удался");
+        }
+    }
+
     private async void OnGameExited(GameSession s, CrashInfo? crash)
     {
         IsRunning = false;
+        _reminder?.Stop();
+        _reminder = null;
+        _tray.SetGameRunning(false);
+        _stats.SessionEnded();
+        _ = AutoBackupAsync(new[] { s.Instance });
         Crash = crash;
         Mascot = crash is null ? "/Assets/ui/frog_happy.png" : "/Assets/ui/frog_sad.png";
-        if (crash is not null) _toasts.Show($"Игра упала (код {crash.ExitCode}). Последние строки лога — на главной.", ToastKind.Error, 7);
+        if (crash is not null) _toasts.Show(L.T($"Игра упала (код {crash.ExitCode}). Последние строки лога — на главной."), ToastKind.Error, 7);
         if (Application.Current.MainWindow is { WindowState: WindowState.Minimized } w) w.WindowState = WindowState.Normal;
         await _presence.SetIdleAsync();
     }
@@ -212,5 +344,5 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         ShowAdBanner = !_entitlements.IsAllowed(EntitlementKeys.NoAds);
 
     private void UpdateAccount() =>
-        AccountLabel = _accounts.Selected is { } a ? $"{a.Name} · {a.TypeLabel}" : "Аккаунт не выбран";
+        AccountLabel = _accounts.Selected is { } a ? $"{a.Name} · {a.TypeLabel}" : L.T("Аккаунт не выбран");
 }

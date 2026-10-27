@@ -37,7 +37,7 @@ public sealed class DiscordPresenceService(IOptions<LauncherOptions> options, IL
 
     public bool Enabled { get; set; } = true;
 
-    public Task SetIdleAsync() => SetAsync(new PresenceState("В лаунчере", "Выбирает, во что поиграть 🐸", _launcherStarted));
+    public Task SetIdleAsync() => SetAsync(new PresenceState(L.T("В лаунчере"), L.T("Выбирает, во что поиграть 🐸"), _launcherStarted));
 
     public async Task SetAsync(PresenceState state)
     {
@@ -56,7 +56,8 @@ public sealed class DiscordPresenceService(IOptions<LauncherOptions> options, IL
             _last = state;
             _lastSent = DateTimeOffset.UtcNow;
         }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException or TimeoutException or JsonException)
+        // OperationCanceledException — Discord не ответил вовремя (завис или перезапускается): тоже не повод ронять лаунчер.
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or TimeoutException or JsonException or OperationCanceledException)
         {
             log.LogDebug(ex, "Discord RPC: соединение потеряно");
             Disconnect();
@@ -82,7 +83,7 @@ public sealed class DiscordPresenceService(IOptions<LauncherOptions> options, IL
             await WriteFrameAsync(1, payload);
             _last = null;
         }
-        catch (Exception ex) when (ex is IOException or ObjectDisposedException)
+        catch (Exception ex) when (ex is IOException or ObjectDisposedException or OperationCanceledException)
         {
             Disconnect();
         }
@@ -97,7 +98,7 @@ public sealed class DiscordPresenceService(IOptions<LauncherOptions> options, IL
         var assets = new JsonObject
         {
             ["large_image"] = "frog_logo",
-            ["large_text"] = "FrogLauncher — неофициальный лаунчер Minecraft",
+            ["large_text"] = L.T("FrogLauncher — неофициальный лаунчер Minecraft"),
         };
         if (!string.IsNullOrEmpty(s.SmallImage))
         {
@@ -109,7 +110,7 @@ public sealed class DiscordPresenceService(IOptions<LauncherOptions> options, IL
         {
             ["details"] = Trim(s.Details),
             ["assets"] = assets,
-            ["buttons"] = new JsonArray(new JsonObject { ["label"] = "FrogLauncher на GitHub", ["url"] = _gitHub }),
+            ["buttons"] = new JsonArray(new JsonObject { ["label"] = L.T("FrogLauncher на GitHub"), ["url"] = _gitHub }),
         };
         if (s.State is not null) activity["state"] = Trim(s.State);
         if (s.StartedAt is { } t) activity["timestamps"] = new JsonObject { ["start"] = t.ToUnixTimeSeconds() };
@@ -142,7 +143,7 @@ public sealed class DiscordPresenceService(IOptions<LauncherOptions> options, IL
                 log.LogInformation("Discord RPC подключён (discord-ipc-{Index})", i);
                 return true;
             }
-            catch (Exception ex) when (ex is TimeoutException or IOException)
+            catch (Exception ex) when (ex is TimeoutException or IOException or OperationCanceledException)
             {
                 await pipe.DisposeAsync();
                 _pipe = null;
@@ -169,7 +170,7 @@ public sealed class DiscordPresenceService(IOptions<LauncherOptions> options, IL
         var header = new byte[8];
         await _pipe!.ReadExactlyAsync(header, cts.Token);
         var len = BinaryPrimitives.ReadInt32LittleEndian(header.AsSpan(4));
-        if (len is < 0 or > 64 * 1024) throw new IOException("Discord RPC: некорректный кадр");
+        if (len is < 0 or > 64 * 1024) throw new IOException(L.T("Discord RPC: некорректный кадр"));
         var body = new byte[len];
         await _pipe.ReadExactlyAsync(body, cts.Token);
     }
