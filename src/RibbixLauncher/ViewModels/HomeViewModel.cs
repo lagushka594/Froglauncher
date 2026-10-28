@@ -35,6 +35,25 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     private readonly ModBisectService _bisect;
     private readonly FriendLinkService _friends;
     private readonly SkinService _skins;
+    private string? _openedHost;
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"[a-z0-9-]+(\.[a-z0-9-]+)*\.e4mc\.link", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex E4mcRegex();
+
+    /// <summary>
+    /// «Открыть мир друзьям»: мод e4mc выдал публичный адрес открытого для сети мира — копируем его, показываем
+    /// и включаем «Присоединиться» в Discord, чтобы друзья зашли в один клик.
+    /// </summary>
+    private void OnWorldOpened(string host)
+    {
+        if (host == _openedHost || _launcher.Current?.Instance is not { } inst) return;
+        _openedHost = host;
+        try { Clipboard.SetText(host); } catch (System.Runtime.InteropServices.COMException) { }
+        _toasts.Show(L.T($"🌍 Мир открыт для друзей: {host} — адрес скопирован. Друзья: «Сетевая игра» → «Прямое подключение»."), ToastKind.Success, 12);
+        _ = _presence.SetAsync(new PresenceState(L.T($"Играет в Minecraft {inst.GameVersion}"), L.T("Открыл мир для друзей 🌍"),
+            _launcher.Current.StartedAt, SmallImage: "playing", SmallText: _accounts.Selected?.Name ?? "",
+            JoinSecret: FriendLinkService.JoinSecret(inst, host)));
+    }
     private readonly PreflightService _preflight;
     public QuestsViewModel Quests { get; }
     private bool _skipPreflight;
@@ -206,6 +225,7 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
 
         launcher.OutputReceived += line => Application.Current.Dispatcher.BeginInvoke(() =>
         {
+            if (E4mcRegex().Match(line) is { Success: true } host) OnWorldOpened(host.Value);
             LogLines.Add(line);
             LastLogLine = line;
             while (LogLines.Count > 300) LogLines.RemoveAt(0);

@@ -44,6 +44,39 @@ public partial class InstancesViewModel(
 
     [ObservableProperty] private bool _isOptimizing;
 
+    /// <summary>«Открыть мир друзьям»: мод e4mc даёт открытому для сети миру публичный адрес — без проброса портов.</summary>
+    [RelayCommand]
+    private async Task HostWorldAsync()
+    {
+        if (Selected is not { } inst || IsOptimizing) return;
+        if (inst.Loader == LoaderType.Vanilla)
+        {
+            toasts.Show(L.T("Нужна версия с Fabric, Quilt, Forge или NeoForge — e4mc это мод. Создайте такую версию в «Каталоге»."), ToastKind.Info, 8);
+            return;
+        }
+        IsOptimizing = true;
+        try
+        {
+            if (!inst.InstalledMods.Any(m => m.Title.Contains("e4mc", StringComparison.OrdinalIgnoreCase)) &&
+                !System.IO.Directory.EnumerateFiles(System.IO.Path.Combine(inst.GameDirectory, "mods")).Any(f => System.IO.Path.GetFileName(f).StartsWith("e4mc", StringComparison.OrdinalIgnoreCase)))
+            {
+                await modrinth.InstallAsync(inst, "e4mc", CancellationToken.None);
+                instances.Save(inst);
+                RefreshModFiles();
+            }
+            System.Windows.MessageBox.Show(L.T("Готово! Как открыть мир друзьям:\n\n1. Нажмите «Играть» и зайдите в свой мир.\n2. Esc → «Открыть для сети» → «Начать».\n3. Лаунчер скопирует адрес вида xxx.e4mc.link и покажет его — отправьте друзьям.\n4. Друзья: «Сетевая игра» → «Прямое подключение» → адрес. У них должна быть та же версия Minecraft (и моды, если они нужны миру).\n\nВ Discord у вас появится кнопка «Присоединиться»."),
+                "Ribbix Launcher", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
+        catch (Exception ex) when (ex is ModsException or System.Net.Http.HttpRequestException or System.IO.IOException)
+        {
+            toasts.Show(ex is ModsException ? ex.Message : L.T("Не удалось скачать мод: ") + ex.Message, ToastKind.Error, 7);
+        }
+        finally
+        {
+            IsOptimizing = false;
+        }
+    }
+
     /// <summary>«🚀 Ускорить»: набор модов оптимизации под загрузчик версии (со снимком для отката).</summary>
     [RelayCommand]
     private async Task OptimizeAsync()
