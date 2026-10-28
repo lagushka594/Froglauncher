@@ -6,6 +6,6 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Company>Ribbix Studio (неофициальный проект, не связан с Mojang/Microsoft)</Company>
     <Product>Ribbix Launcher</Product>
-    <Version>2.9.0</Version>
+    <Version>3.0.0</Version>
   </PropertyGroup>
 </Project>
