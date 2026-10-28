@@ -962,7 +962,21 @@ public partial class SettingsViewModel(
         try
         {
             settings.Current.SkippedUpdate = null;
-            var info = IsInstalledCopy ? await updates.CheckAndDownloadAsync(CancellationToken.None) : await updates.CheckAsync(CancellationToken.None);
+            // Установщик ~75 МБ — на медленном интернете это минуты, показываем прогресс.
+            var progress = new Progress<(string Version, long Done, long Total)>(p => UpdateStatus = p.Total > 0
+                ? L.T($"Скачиваем версию {p.Version}… {p.Done / 1048576.0:0.0} / {p.Total / 1048576.0:0.0} МБ")
+                : L.T($"Скачиваем версию {p.Version}… {p.Done / 1048576.0:0.0} МБ"));
+            void OnProgress(string v, long d, long t) => ((IProgress<(string, long, long)>)progress).Report((v, d, t));
+            updates.DownloadProgress += OnProgress;
+            UpdateInfo? info;
+            try
+            {
+                info = IsInstalledCopy ? await updates.CheckAndDownloadAsync(CancellationToken.None) : await updates.CheckAsync(CancellationToken.None);
+            }
+            finally
+            {
+                updates.DownloadProgress -= OnProgress;
+            }
             UpdateStatus = info switch
             {
                 null => L.T($"У вас последняя версия ({CurrentVersion}, канал {updates.Channel}) 🐸"),

@@ -36,6 +36,11 @@ public sealed partial class UpdateService(
     public UpdateInfo? Ready { get; private set; }
     public string? ReadyFile { get; private set; }
     public event Action? ReadyChanged;
+    /// <summary>Скачивание установщика: версия, скачано и всего байт (из фонового потока).</summary>
+    public event Action<string, long, long>? DownloadProgress;
+
+    private readonly object _gate = new();
+    private Task<UpdateInfo?>? _running;
 
     /// <summary>beta-канал — Ribbix+ и выше (включая Admin).</summary>
     public bool CanUseBeta => tiers.RankOf(entitlements.Tier) >= tiers.RankOf(TierSlugs.RibbixPlus);
@@ -99,8 +104,20 @@ public sealed partial class UpdateService(
         return best;
     }
 
-    /// <summary>Проверить и тихо скачать обновление в фоне. Возвращает найденное обновление (или null).</summary>
-    public async Task<UpdateInfo?> CheckAndDownloadAsync(CancellationToken ct)
+    /// <summary>
+    /// Проверить и тихо скачать обновление в фоне. Возвращает найденное обновление (или null).
+    /// Повторный вызов во время загрузки (фон при запуске + «Проверить сейчас») ждёт ту же загрузку.
+    /// </summary>
+    public Task<UpdateInfo?> CheckAndDownloadAsync(CancellationToken ct)
+    {
+        lock (_gate)
+        {
+            if (_running is { IsCompleted: false }) return _running;
+            return _running = RunAsync(ct);
+        }
+    }
+
+    private async Task<UpdateInfo?> RunAsync(CancellationToken ct)
     {
         var info = await CheckAsync(ct);
         if (info is null || info.Version == settings.Current.SkippedUpdate) return info;
@@ -116,9 +133,34 @@ public sealed partial class UpdateService(
         {
             var http = httpFactory.CreateClient(DownloadService.HttpClientName);
             var tmp = file + ".part";
-            await using (var src = await http.GetStreamAsync(info.SetupUrl, ct))
-            await using (var dst = File.Create(tmp))
-                await src.CopyToAsync(dst, ct);
+            // Докачка: на медленном интернете лаунчер могут закрыть посреди загрузки — продолжаем с того же места.
+            var have = File.Exists(tmp) ? new FileInfo(tmp).Length : 0;
+            using var get = new HttpRequestMessage(HttpMethod.Get, info.SetupUrl);
+            if (have > 0) get.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(have, null);
+            using (var resp = await http.SendAsync(get, HttpCompletionOption.ResponseHeadersRead, ct))
+            {
+                if (resp.StatusCode == System.Net.HttpStatusCode.RequestedRangeNotSatisfiable) have = 0; // .part уже целиком — проверим хэш ниже
+                else resp.EnsureSuccessStatusCode();
+                var resume = resp.StatusCode == System.Net.HttpStatusCode.PartialContent;
+                if (!resume && resp.IsSuccessStatusCode) have = 0;
+                var total = have + (resp.Content.Headers.ContentLength ?? 0);
+                await using var src = await resp.Content.ReadAsStreamAsync(ct);
+                await using var dst = resp.IsSuccessStatusCode ? new FileStream(tmp, resume ? FileMode.Append : FileMode.Create) : Stream.Null;
+                var buf = new byte[1 << 16];
+                long done = have, reported = have;
+                int n;
+                DownloadProgress?.Invoke(info.Version, have, total);
+                while ((n = await src.ReadAsync(buf, ct)) > 0)
+                {
+                    await dst.WriteAsync(buf.AsMemory(0, n), ct);
+                    done += n;
+                    if (done - reported >= 512 * 1024)
+                    {
+                        reported = done;
+                        DownloadProgress?.Invoke(info.Version, done, total);
+                    }
+                }
+            }
             if (await Hashing.Sha256FileAsync(tmp, ct) != info.Sha256)
             {
                 File.Delete(tmp);

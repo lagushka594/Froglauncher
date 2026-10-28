@@ -900,6 +900,8 @@
  "Скачать нужную Java": "Descargar la Java necesaria",
  "Скачиваем Java {0}…": "Descargando Java {0}…",
  "Скачиваем ffmpeg…": "Descargando ffmpeg…",
+ "Скачиваем версию {0}… {1:0.0} / {2:0.0} МБ": "Descargando la versión {0}… {1:0.0} / {2:0.0} MB",
+ "Скачиваем версию {0}… {1:0.0} МБ": "Descargando la versión {0}… {1:0.0} MB",
  "Скачиваем моды друга": "Descargando los mods de tu amigo",
  "Скачиваем сборку": "Descargando el modpack",
  "Скин": "Skin",
