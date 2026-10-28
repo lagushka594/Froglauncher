@@ -47,6 +47,8 @@
     <Resource Include="..\..\assets\out\**\*.png" Exclude="..\..\assets\out\_contact_sheet.png"
               Link="Assets\%(RecursiveDir)%(Filename)%(Extension)" />
     <Resource Include="..\..\assets\out\ui\icon_frog.ico" Link="Assets\ui\icon_frog.ico" />
+    <!-- Пиксельные шрифты (OFL, лицензии рядом): Press Start 2P — заголовки и «ИГРАТЬ», Tiny5 — кнопки и меню. -->
+    <Resource Include="..\..\assets\fonts\*.ttf" Link="Assets\fonts\%(Filename)%(Extension)" />
   </ItemGroup>
 
   <!-- Тот же tiers.json, что на сервере: карточки тарифов видны, даже когда сервер недоступен. -->

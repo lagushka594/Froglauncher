@@ -16,7 +16,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Игровые аккаунты. -->
-        <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+        <v:PixelBorder Style="{StaticResource Card}" Margin="0,0,8,0">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <Image Source="/Assets/main/avatar.png" Height="56" Margin="0,0,12,0" />
@@ -29,7 +29,7 @@
                 <ItemsControl ItemsSource="{Binding Accounts}" Margin="0,14,0,0">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border CornerRadius="10" Padding="10,6" Margin="0,3" Background="#10FFFFFF">
+                            <v:PixelBorder CornerRadius="10" Padding="10,6" Margin="0,3" Background="#10FFFFFF">
                                 <DockPanel>
                                     <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="✕" Padding="10,4"
                                             Command="{Binding DataContext.RemoveAccountCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -40,7 +40,7 @@
                                         <TextBlock><Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="  ·  " /><Run Text="{Binding TypeLabel, Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" /></TextBlock>
                                     </RadioButton>
                                 </DockPanel>
-                            </Border>
+                            </v:PixelBorder>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -51,7 +51,7 @@
                 <TextBlock Text="{l:T 'Войти через Microsoft (лицензия)'}" Style="{StaticResource H2}" Margin="0,18,0,6" />
                 <Button Style="{StaticResource AccentButton}" Content="{l:T 'Войти через Microsoft'}" Command="{Binding LoginMicrosoftCommand}" HorizontalAlignment="Left"
                         Visibility="{Binding MsWaiting, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
-                <Border CornerRadius="10" Padding="12" Background="#1A06B6D4" BorderBrush="{DynamicResource Accent2Brush}" BorderThickness="1"
+                <v:PixelBorder CornerRadius="10" Padding="12" Background="#1A06B6D4" BorderBrush="{DynamicResource Accent2Brush}" BorderThickness="1"
                         Visibility="{Binding MsWaiting, Converter={StaticResource VisibleIf}}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource Muted}" Text="{l:T 'Откройте страницу и введите код (уже скопирован):'}" />
@@ -64,7 +64,7 @@
                             <Button Style="{StaticResource GhostButton}" Content="{l:T 'Отмена'}" Command="{Binding CancelMicrosoftCommand}" />
                         </StackPanel>
                     </StackPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <TextBlock Text="{l:T 'Оффлайн-аккаунт'}" Style="{StaticResource H2}" Margin="0,18,0,6" />
                 <DockPanel>
@@ -73,10 +73,10 @@
                 </DockPanel>
                 <TextBlock Style="{StaticResource Muted}" Margin="0,6,0,0" Text="{l:T 'Для одиночной игры и серверов в offline-mode. UUID генерируется из ника.'}" />
             </StackPanel>
-        </Border>
+        </v:PixelBorder>
 
         <!-- Discord (тариф по ролям на сервере). -->
-        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0"
+        <v:PixelBorder Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0"
                 Visibility="{Binding UsesDiscord, Converter={StaticResource VisibleIf}}">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
@@ -89,10 +89,10 @@
 
                 <StackPanel Margin="0,16,0,0" Visibility="{Binding DiscordLoggedIn, Converter={StaticResource VisibleIf}}">
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="44" Height="44" CornerRadius="22" ClipToBounds="True" Margin="0,0,12,0" Background="#5865F2">
+                        <v:PixelBorder Width="44" Height="44" CornerRadius="22" ClipToBounds="True" Margin="0,0,12,0" Background="#5865F2">
                             <Border.Clip><EllipseGeometry Center="22,22" RadiusX="22" RadiusY="22" /></Border.Clip>
                             <Image Source="{Binding DiscordAvatar, TargetNullValue=/Assets/ui/avatar.png}" />
-                        </Border>
+                        </v:PixelBorder>
                         <StackPanel VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="{Binding DiscordName}" Style="{StaticResource H2}" />
@@ -121,10 +121,10 @@
                                Text="{l:T 'Лаунчер увидит только ваш ник и роли на нашем сервере. Пароль от Discord лаунчер не получает.'}" />
                 </StackPanel>
             </StackPanel>
-        </Border>
+        </v:PixelBorder>
 
         <!-- Аккаунт RibbixLauncher (для подписок через свой сервер). -->
-        <Border Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0"
+        <v:PixelBorder Grid.Column="1" Style="{StaticResource Card}" Margin="8,0,0,0"
                 Visibility="{Binding UsesDiscord, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
             <StackPanel>
                 <StackPanel Orientation="Horizontal">
@@ -160,7 +160,7 @@
                             Command="{Binding LauncherLoginCommand}" CommandParameter="{Binding ElementName=Password}" />
                 </StackPanel>
             </StackPanel>
-        </Border>
+        </v:PixelBorder>
     </Grid>
     </TabItem>
 
@@ -168,7 +168,7 @@
     <TabItem Header="{l:T '📊 Статистика'}">
         <ScrollViewer DataContext="{Binding Stats}" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,4,8,8">
-                <Border Style="{StaticResource Card}">
+                <v:PixelBorder Style="{StaticResource Card}">
                     <DockPanel>
                         <TextBlock DockPanel.Dock="Left" Text="{Binding BadgeEmoji}" FontSize="48" VerticalAlignment="Center" Margin="0,0,16,0" />
                         <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right">
@@ -181,7 +181,7 @@
                             <TextBlock Text="{Binding BadgeProgress}" Style="{StaticResource Muted}" />
                         </StackPanel>
                     </DockPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <ItemsControl ItemsSource="{Binding Tiles}" Margin="0,12,0,0">
                     <ItemsControl.ItemsPanel>
@@ -189,17 +189,17 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                            <v:PixelBorder Style="{StaticResource Card}" Margin="0,0,8,0">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Value}" Style="{StaticResource H2}" />
                                     <TextBlock Text="{Binding Label}" Style="{StaticResource Muted}" TextWrapping="Wrap" />
                                 </StackPanel>
-                            </Border>
+                            </v:PixelBorder>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <v:PixelBorder Style="{StaticResource Card}" Margin="0,12,0,0">
                     <StackPanel>
                         <DockPanel>
                             <TextBlock DockPanel.Dock="Right" Text="{Binding ChartMax}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Bottom" />
@@ -240,14 +240,14 @@
                         <TextBlock Text="{l:T 'Пока пусто — запустите игру из лаунчера, и здесь появится ваша активность 🐸'}" Style="{StaticResource Muted}"
                                    Margin="0,10,0,0" Visibility="{Binding IsEmpty, Converter={StaticResource VisibleIf}}" />
                     </StackPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <Grid Margin="0,12,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="3*" />
                         <ColumnDefinition Width="2*" />
                     </Grid.ColumnDefinitions>
-                    <Border Style="{StaticResource Card}" Margin="0,0,8,0">
+                    <v:PixelBorder Style="{StaticResource Card}" Margin="0,0,8,0">
                         <StackPanel>
                             <TextBlock Text="{l:T 'В мирах Minecraft'}" Style="{StaticResource H2}" />
                             <TextBlock Text="{l:T 'Из статистики всех миров всех версий'}" Style="{StaticResource Muted}" FontSize="12" Margin="0,2,0,8" />
@@ -265,8 +265,8 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
-                    </Border>
-                    <Border Grid.Column="1" Style="{StaticResource Card}">
+                    </v:PixelBorder>
+                    <v:PixelBorder Grid.Column="1" Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Text="{l:T 'Любимые версии'}" Style="{StaticResource H2}" Margin="0,0,0,8" />
                             <ItemsControl ItemsSource="{Binding TopVersions}">
@@ -285,10 +285,10 @@
                             <TextBlock Text="{l:T 'Появятся после первых игр'}" Style="{StaticResource Muted}"
                                        Visibility="{Binding TopVersions.Count, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
                         </StackPanel>
-                    </Border>
+                    </v:PixelBorder>
                 </Grid>
 
-                <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                <v:PixelBorder Style="{StaticResource Card}" Margin="0,12,0,0">
                     <StackPanel>
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
@@ -322,7 +322,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border x:Name="Row" Margin="0,0,8,8" Padding="10,8" CornerRadius="8" Background="{DynamicResource SurfaceBrush}" Opacity="0.75"
+                                    <v:PixelBorder x:Name="Row" Margin="0,0,8,8" Padding="10,8" CornerRadius="8" Background="{DynamicResource SurfaceBrush}" Opacity="0.75"
                                             ToolTip="{Binding Description}">
                                         <DockPanel>
                                             <TextBlock DockPanel.Dock="Right" Text="{Binding ProgressText}" Style="{StaticResource Muted}" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Top" />
@@ -332,7 +332,7 @@
                                                 <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="4" Margin="0,6,0,0" />
                                             </StackPanel>
                                         </DockPanel>
-                                    </Border>
+                                    </v:PixelBorder>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding IsDone}" Value="True">
                                             <Setter TargetName="Row" Property="Opacity" Value="1" />
@@ -344,7 +344,7 @@
                         <TextBlock Text="{l:T 'Пока нет миров с достижениями — зайдите в одиночный мир на версии 1.12 или новее 🐸'}" Style="{StaticResource Muted}" TextWrapping="Wrap"
                                    Visibility="{Binding AdvWorld, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
                     </StackPanel>
-                </Border>
+                </v:PixelBorder>
             </StackPanel>
         </ScrollViewer>
     </TabItem>
@@ -369,13 +369,13 @@
                 </ListBox.ItemsPanel>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border CornerRadius="8" ClipToBounds="True" Margin="2" ToolTip="{Binding Caption}">
+                        <v:PixelBorder CornerRadius="8" ClipToBounds="True" Margin="2" ToolTip="{Binding Caption}">
                             <Image Source="{Binding Thumb}" Stretch="UniformToFill" Height="96" />
-                        </Border>
+                        </v:PixelBorder>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
-            <Border Grid.Column="1" Style="{StaticResource Card}"
+            <v:PixelBorder Grid.Column="1" Style="{StaticResource Card}"
                     Visibility="{Binding Selected, Converter={StaticResource VisibleIf}}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top" Text="{Binding Selected.Caption}" Style="{StaticResource Muted}" Margin="0,0,0,8" />
@@ -398,7 +398,7 @@
                     </StackPanel>
                     <Image Source="{Binding Preview}" Stretch="Uniform" />
                 </DockPanel>
-            </Border>
+            </v:PixelBorder>
         </Grid>
     </TabItem>
 
@@ -409,10 +409,10 @@
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Border CornerRadius="18" ClipToBounds="True" Margin="0,0,20,0" VerticalAlignment="Top">
+            <v:PixelBorder CornerRadius="18" ClipToBounds="True" Margin="0,0,20,0" VerticalAlignment="Top">
                 <Image Source="{Binding Preview}" Height="560" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality"
                        Cursor="Hand" MouseLeftButtonUp="RecapPreview_Click" AutomationProperties.Name="Карточка итогов года" />
-            </Border>
+            </v:PixelBorder>
             <StackPanel Grid.Column="1">
                 <TextBlock Text="{l:T 'Мой год в Minecraft'}" Style="{StaticResource H1}" />
                 <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"

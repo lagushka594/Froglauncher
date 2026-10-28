@@ -18,30 +18,31 @@
         </Grid.ColumnDefinitions>
 
         <!-- Список инстансов. -->
-        <Border Style="{StaticResource Card}" Margin="0,0,12,0">
+        <v:PixelBorder Style="{StaticResource Card}" Margin="0,0,12,0">
             <DockPanel>
-                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
-                    <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:T '+ Добавить'}" Command="{Binding StartCreateCommand}" />
-                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T '📥 Импорт'}" Command="{Binding ImportPackCommand}"
-                            Margin="0,0,8,0" ToolTip="{l:T '.mrpack (Modrinth), полная копия Ribbix или экспорт Prism/MultiMC. Можно просто перетащить файл сюда.'}" />
-                    <StackPanel>
-                        <TextBlock Text="{l:T 'Мои версии'}" Style="{StaticResource H2}" />
-                        <TextBlock Text="{Binding LimitText}" Style="{StaticResource Muted}" />
-                    </StackPanel>
-                </DockPanel>
+                <!-- Заголовок сверху, кнопки — строкой под ним: пиксельные кнопки шире прежних. -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                    <TextBlock Text="{l:T 'Мои версии'}" Style="{StaticResource H2}" />
+                    <TextBlock Text="{Binding LimitText}" Style="{StaticResource Muted}" />
+                    <WrapPanel Margin="0,8,0,0">
+                        <Button Style="{StaticResource AccentButton}" Content="{l:T '+ Добавить'}" Command="{Binding StartCreateCommand}" Margin="0,0,8,0" />
+                        <Button Style="{StaticResource GhostButton}" Content="{l:T '📥 Импорт'}" Command="{Binding ImportPackCommand}"
+                                ToolTip="{l:T '.mrpack (Modrinth), полная копия Ribbix или экспорт Prism/MultiMC. Можно просто перетащить файл сюда.'}" />
+                    </WrapPanel>
+                </StackPanel>
 
                 <!-- Импорт: прогресс. -->
-                <Border DockPanel.Dock="Top" CornerRadius="10" Padding="10,8" Margin="0,0,0,10" Background="#1522C55E"
+                <v:PixelBorder DockPanel.Dock="Top" CornerRadius="10" Padding="10,8" Margin="0,0,0,10" Background="#1522C55E"
                         Visibility="{Binding IsImporting, Converter={StaticResource VisibleIf}}">
                     <StackPanel DataContext="{Binding ImportProgress}">
                         <TextBlock Text="{Binding Stage}" FontWeight="SemiBold" TextWrapping="Wrap" />
                         <ProgressBar Value="{Binding Percent, Mode=OneWay}" IsIndeterminate="{Binding IsIndeterminate}" Height="6" Margin="0,6,0,4" />
                         <TextBlock Text="{Binding Details}" Style="{StaticResource Muted}" FontSize="11" />
                     </StackPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <!-- Мягкий апселл при лимите. -->
-                <Border DockPanel.Dock="Top" CornerRadius="10" Padding="12" Margin="0,0,0,10" Background="#22F59E0B" BorderBrush="#F59E0B" BorderThickness="1"
+                <v:PixelBorder DockPanel.Dock="Top" CornerRadius="10" Padding="12" Margin="0,0,0,10" Background="#22F59E0B" BorderBrush="#F59E0B" BorderThickness="1"
                         Visibility="{Binding Upsell, Converter={StaticResource VisibleIf}}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
@@ -50,7 +51,7 @@
                         </StackPanel>
                         <Button Style="{StaticResource GhostButton}" Content="{l:T 'Сравнить'}" Command="{Binding CompareCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" />
                     </StackPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <ListBox ItemsSource="{Binding Instances}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -59,9 +60,9 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
-                                        <Border x:Name="Bd" CornerRadius="10" Padding="10,8" Margin="0,3" Background="#10FFFFFF" BorderThickness="1" BorderBrush="Transparent">
+                                        <v:PixelBorder x:Name="Bd" CornerRadius="10" Padding="10,8" Margin="0,3" Background="#10FFFFFF" BorderThickness="1" BorderBrush="Transparent">
                                             <ContentPresenter />
-                                        </Border>
+                                        </v:PixelBorder>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsSelected" Value="True">
                                                 <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
@@ -89,10 +90,10 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
             </DockPanel>
-        </Border>
+        </v:PixelBorder>
 
         <!-- Создание инстанса. -->
-        <Border Grid.Column="1" Style="{StaticResource Card}" Visibility="{Binding IsCreating, Converter={StaticResource VisibleIf}}">
+        <v:PixelBorder Grid.Column="1" Style="{StaticResource Card}" Visibility="{Binding IsCreating, Converter={StaticResource VisibleIf}}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <TextBlock Text="{l:T 'Новая версия'}" Style="{StaticResource H1}" />
@@ -136,10 +137,10 @@
                                Text="{l:T 'Файлы игры скачаются при первом запуске. Forge поддерживается от 1.7.10, NeoForge — от 1.20.2.'}" />
                 </StackPanel>
             </ScrollViewer>
-        </Border>
+        </v:PixelBorder>
 
         <!-- ===== Настройки выбранной версии: вкладки ===== -->
-        <Border Grid.Column="1" Style="{StaticResource Card}" Padding="16,14"
+        <v:PixelBorder Grid.Column="1" Style="{StaticResource Card}" Padding="16,14"
                 Visibility="{Binding IsCreating, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
             <DockPanel DataContext="{Binding SettingsPanel}" Visibility="{Binding Converter={StaticResource VisibleIf}}">
                 <!-- Заголовок -->
@@ -150,9 +151,9 @@
                                 ToolTip="{l:T 'Ссылка, по которой у друга сам поставится тот же Minecraft с модами'}" />
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '📤 Экспорт'}" Command="{Binding TogglePackExportCommand}" Margin="0,0,8,0"
                                 ToolTip="{l:T 'Сохранить версию как сборку .mrpack или полную копию .zip'}" />
-                        <Button Style="{StaticResource ImageButton}" ToolTip="{l:T 'Открыть папку игры'}" Margin="0,0,8,0"
+                        <Button Style="{StaticResource GhostButton}" ToolTip="{l:T 'Открыть папку игры'}" Margin="0,0,8,0" Padding="10,6"
                                 Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
-                            <Image Source="/Assets/ui/folder.png" Height="36" />
+                            <v:PixelIcon Kind="folder" Foreground="#FACC15" Width="18" Height="18" />
                         </Button>
                         <Button Style="{StaticResource DangerButton}" Content="{l:T 'Удалить'}"
                                 Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
@@ -164,7 +165,7 @@
                 </DockPanel>
 
                 <!-- Играть с другом -->
-                <Border DockPanel.Dock="Top" CornerRadius="10" Padding="14,12" Margin="0,0,0,10" Background="#140A101E"
+                <v:PixelBorder DockPanel.Dock="Top" CornerRadius="10" Padding="14,12" Margin="0,0,0,10" Background="#140A101E"
                         BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
                         Visibility="{Binding ShowInvite, Converter={StaticResource VisibleIf}}">
                     <StackPanel>
@@ -189,15 +190,23 @@
                                         Command="{Binding CopyInviteCommand}" CommandParameter="{Binding InviteLink}" />
                                 <TextBox Text="{Binding InviteLink, Mode=OneWay}" IsReadOnly="True" AutomationProperties.Name="Ссылка ribbix" />
                             </DockPanel>
+                            <Button Style="{StaticResource GhostButton}" Command="{Binding SendInDiscordCommand}" HorizontalAlignment="Left" Margin="0,8,0,0" BorderBrush="#5865F2">
+                                <StackPanel Orientation="Horizontal">
+                                    <v:PixelIcon Kind="chat" Foreground="#8B9BFF" Width="16" Height="16" Margin="0,0,8,0" />
+                                    <TextBlock Text="{l:T 'Отправить в Discord'}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
+                                       Text="{l:T 'Когда вы играете на сервере, в вашем статусе Discord появляется кнопка «Присоединиться» — друг с Ribbix зайдёт к вам в один клик.'}" />
                             <TextBlock Text="{Binding InviteNote}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0" />
                             <TextBlock Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
                                        Text="{l:T 'Ссылку ribbix:// друг вставляет в адресную строку браузера (Discord такие ссылки не делает кликабельными). У друга должен стоять Ribbix.'}" />
                         </StackPanel>
                     </StackPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <!-- Экспорт сборки -->
-                <Border DockPanel.Dock="Top" CornerRadius="10" Padding="14,12" Margin="0,0,0,10" Background="#140A101E"
+                <v:PixelBorder DockPanel.Dock="Top" CornerRadius="10" Padding="14,12" Margin="0,0,0,10" Background="#140A101E"
                         BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
                         Visibility="{Binding ShowPackExport, Converter={StaticResource VisibleIf}}">
                     <StackPanel>
@@ -218,15 +227,15 @@
                         <TextBlock Style="{StaticResource Muted}" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"
                                    Text="{l:T 'Логи, скриншоты и бэкапы не переносятся. Аккаунты и пароли в сборку не попадают.'}" />
                     </StackPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <!-- Предупреждения валидации -->
                 <ItemsControl DockPanel.Dock="Top" ItemsSource="{Binding Warnings}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border CornerRadius="8" Padding="10,5" Margin="0,0,0,6" Background="#26F59E0B" BorderBrush="#F59E0B" BorderThickness="1">
+                            <v:PixelBorder CornerRadius="8" Padding="10,5" Margin="0,0,0,6" Background="#26F59E0B" BorderBrush="#F59E0B" BorderThickness="1">
                                 <TextBlock Text="{Binding}" TextWrapping="Wrap" FontSize="12.5" />
-                            </Border>
+                            </v:PixelBorder>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -237,7 +246,7 @@
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="0,4,8,8">
                                 <!-- Умные пресеты -->
-                                <Border CornerRadius="12" Padding="12" Background="#141F7A4C" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1">
+                                <v:PixelBorder CornerRadius="12" Padding="12" Background="#141F7A4C" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1">
                                     <StackPanel>
                                         <DockPanel>
                                             <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T 'Сбросить до рекомендуемых'}" Command="{Binding ResetRecommendedCommand}" />
@@ -245,7 +254,7 @@
                                         </DockPanel>
                                         <TextBlock Text="{Binding HardwareText}" Style="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" />
                                         <TextBlock Text="{Binding RecommendationText}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" Margin="0,4,0,8" />
-                                        <Border CornerRadius="10" Padding="10,8" Margin="0,0,0,10" Background="#22000000">
+                                        <v:PixelBorder CornerRadius="10" Padding="10,8" Margin="0,0,0,10" Background="#22000000">
                                             <StackPanel>
                                                 <DockPanel>
                                                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -274,7 +283,7 @@
                                                 <TextBlock Text="{Binding BenchmarkText}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0"
                                                            Visibility="{Binding BenchmarkText, Converter={StaticResource VisibleIf}}" />
                                             </StackPanel>
-                                        </Border>
+                                        </v:PixelBorder>
                                         <ItemsControl ItemsSource="{Binding Presets}">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
@@ -296,7 +305,7 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </StackPanel>
-                                </Border>
+                                </v:PixelBorder>
 
                                 <TextBlock Text="{l:T 'Качество'}" Style="{StaticResource H2}" Margin="0,16,0,6" />
                                 <UniformGrid Columns="2">
@@ -548,10 +557,10 @@
                                     <Button Style="{StaticResource GhostButton}" Content="{l:T 'Проверить (java -version)'}" Command="{Binding TestJavaCommand}" Margin="0,0,8,0" />
                                     <Button Style="{StaticResource AccentButton}" Content="{l:T 'Скачать нужную Java'}" Command="{Binding DownloadJavaCommand}" />
                                 </StackPanel>
-                                <Border CornerRadius="8" Padding="10" Margin="0,10,0,0" Background="#C0050910"
+                                <v:PixelBorder CornerRadius="8" Padding="10" Margin="0,10,0,0" Background="#C0050910"
                                         Visibility="{Binding JavaTestOutput, Converter={StaticResource VisibleIf}}">
                                     <TextBlock Text="{Binding JavaTestOutput}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap" />
-                                </Border>
+                                </v:PixelBorder>
                                 <TextBlock Style="{StaticResource Muted}" FontSize="12" Margin="0,12,0,0"
                                            Text="{l:T 'Память (-Xmx/-Xms), сборщик мусора и свои флаги — во вкладке «Производительность».'}" />
                             </StackPanel>
@@ -578,7 +587,7 @@
                                 <ItemsControl ItemsSource="{Binding ResourcePacks}" Margin="0,6,0,0">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border CornerRadius="8" Padding="8,4" Margin="0,2" Background="#10FFFFFF">
+                                            <v:PixelBorder CornerRadius="8" Padding="8,4" Margin="0,2" Background="#10FFFFFF">
                                                 <DockPanel>
                                                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                                                         <Button Style="{StaticResource GhostButton}" Content="▲" Padding="8,2" Margin="0,0,4,0"
@@ -588,7 +597,7 @@
                                                     </StackPanel>
                                                     <CheckBox Style="{StaticResource Check}" Content="{Binding Title}" IsChecked="{Binding Enabled}" VerticalAlignment="Center" />
                                                 </DockPanel>
-                                            </Border>
+                                            </v:PixelBorder>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -599,8 +608,11 @@
                                 <DockPanel>
                                     <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:T '🔍 Каталог модов'}"
                                             Command="{Binding DataContext.ToggleModCatalogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T '🎨 Ресурспаки и шейдеры'}" Margin="0,0,8,0"
+                                            ToolTip="{l:T 'Каталог Modrinth: ресурспаки, шейдеры и датапаки для этой версии'}"
+                                            Command="{Binding DataContext.OpenModrinthCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="resourcepack" />
                                     <StackPanel Orientation="Horizontal">
-                                        <Image Source="/Assets/ui/item_block.png" Height="28" Margin="0,0,10,0" />
+                                        <ContentControl Style="{StaticResource IconTile}" Tag="mods" Foreground="#22C55E" Width="36" Height="36" FontSize="22" Margin="0,0,10,0" />
                                         <TextBlock Text="{l:T 'Моды'}" Style="{StaticResource H2}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </DockPanel>
@@ -638,7 +650,7 @@
                                                Visibility="{Binding SnapshotText, Converter={StaticResource VisibleIf}}" />
                                 </StackPanel>
 
-                                <Border CornerRadius="12" Padding="12" Margin="0,10,0,0" Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                                <v:PixelBorder CornerRadius="12" Padding="12" Margin="0,10,0,0" Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
                                         Visibility="{Binding DataContext.ShowModCatalog, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource VisibleIf}}">
                                     <StackPanel>
                                         <DockPanel>
@@ -655,7 +667,7 @@
                                         <ItemsControl ItemsSource="{Binding DataContext.ModResults, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,8,0,0">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Border CornerRadius="10" Padding="10,8" Margin="0,3" Background="#10FFFFFF">
+                                                    <v:PixelBorder CornerRadius="10" Padding="10,8" Margin="0,3" Background="#10FFFFFF">
                                                         <DockPanel>
                                                             <Grid DockPanel.Dock="Right" VerticalAlignment="Center" Margin="10,0,0,0">
                                                                 <Button Style="{StaticResource AccentButton}" Content="{l:T 'Установить'}" Padding="14,6"
@@ -664,13 +676,13 @@
                                                                         Visibility="{Binding IsInstalled, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
                                                                 <TextBlock Text="{l:T '✓ Установлен'}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center"
                                                                            Visibility="{Binding IsInstalled, Converter={StaticResource VisibleIf}}" />
-                                                                <Border Background="#E00D1528" CornerRadius="8" Visibility="{Binding IsInstalling, Converter={StaticResource VisibleIf}}">
+                                                                <v:PixelBorder Background="#E00D1528" CornerRadius="8" Visibility="{Binding IsInstalling, Converter={StaticResource VisibleIf}}">
                                                                     <Image Source="/Assets/ui/loader.png" Height="24" Style="{StaticResource Spinning}" />
-                                                                </Border>
+                                                                </v:PixelBorder>
                                                             </Grid>
-                                                            <Border DockPanel.Dock="Left" Width="42" Height="42" CornerRadius="8" Margin="0,0,10,0" Background="#22FFFFFF">
+                                                            <v:PixelBorder DockPanel.Dock="Left" Width="42" Height="42" CornerRadius="8" Margin="0,0,10,0" Background="#22FFFFFF">
                                                                 <Image Source="{Binding Hit.IconUrl, TargetNullValue=/Assets/ui/item_block.png}" Stretch="UniformToFill" />
-                                                            </Border>
+                                                            </v:PixelBorder>
                                                             <StackPanel>
                                                                 <TextBlock FontWeight="SemiBold">
                                                                     <Run Text="{Binding Hit.Title, Mode=OneWay}" />
@@ -679,21 +691,21 @@
                                                                 <TextBlock Text="{Binding Hit.Description}" Style="{StaticResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis" MaxHeight="34" />
                                                             </StackPanel>
                                                         </DockPanel>
-                                                    </Border>
+                                                    </v:PixelBorder>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                         <TextBlock Style="{StaticResource Muted}" FontSize="11" Margin="0,6,0,0"
                                                    Text="{l:T 'Моды из каталога Modrinth. Обязательные зависимости (например, Fabric API) ставятся автоматически.'}" />
                                     </StackPanel>
-                                </Border>
+                                </v:PixelBorder>
 
                                 <TextBlock Text="{Binding DataContext.ModsHint, RelativeSource={RelativeSource AncestorType=UserControl}}" Style="{StaticResource Muted}" Margin="0,10,0,0"
                                            Visibility="{Binding DataContext.ModsHint, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource VisibleIf}}" />
                                 <ItemsControl ItemsSource="{Binding DataContext.ModFiles, RelativeSource={RelativeSource AncestorType=UserControl}}" Margin="0,10,0,0">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border CornerRadius="10" Padding="10,6" Margin="0,3" Background="#10FFFFFF">
+                                            <v:PixelBorder CornerRadius="10" Padding="10,6" Margin="0,3" Background="#10FFFFFF">
                                                 <DockPanel>
                                                     <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="✕" Padding="10,4" ToolTip="{l:T 'Удалить мод'}"
                                                             Command="{Binding DataContext.RemoveModCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -709,7 +721,7 @@
                                                         <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Muted}" FontSize="11" />
                                                     </StackPanel>
                                                 </DockPanel>
-                                            </Border>
+                                            </v:PixelBorder>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -759,11 +771,11 @@
                                     <ItemsControl x:Name="WorldsList" ItemsSource="{Binding Items}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border CornerRadius="10" Padding="10" Margin="0,0,0,8" Background="#10FFFFFF">
+                                                <v:PixelBorder CornerRadius="10" Padding="10" Margin="0,0,0,8" Background="#10FFFFFF">
                                                     <DockPanel>
-                                                        <Border DockPanel.Dock="Left" Width="56" Height="56" CornerRadius="8" ClipToBounds="True" Background="#20FFFFFF" Margin="0,0,12,0" VerticalAlignment="Top">
+                                                        <v:PixelBorder DockPanel.Dock="Left" Width="56" Height="56" CornerRadius="8" ClipToBounds="True" Background="#20FFFFFF" Margin="0,0,12,0" VerticalAlignment="Top">
                                                             <Image Source="{Binding Icon}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                                                        </Border>
+                                                        </v:PixelBorder>
                                                         <StackPanel>
                                                             <TextBlock Text="{Binding Info.Name}" Style="{StaticResource H2}" />
                                                             <TextBlock Text="{Binding Info.Summary}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" />
@@ -787,7 +799,7 @@
                                                             </WrapPanel>
                                                         </StackPanel>
                                                     </DockPanel>
-                                                </Border>
+                                                </v:PixelBorder>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
@@ -797,6 +809,6 @@
                     </TabItem>
                 </TabControl>
             </DockPanel>
-        </Border>
+        </v:PixelBorder>
     </Grid>
 </UserControl>

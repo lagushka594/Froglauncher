@@ -9,10 +9,10 @@
     </UserControl.Resources>
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel>
-            <Border Style="{StaticResource Card}">
+            <v:PixelBorder Style="{StaticResource Card}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="/Assets/main/btn_settings.png" Height="48" Margin="0,0,12,0" />
+                        <ContentControl Style="{StaticResource IconTile}" Tag="settings" Foreground="#22D3EE" Width="52" Height="52" FontSize="30" Margin="0,0,12,0" />
                         <TextBlock Text="{l:T 'Настройки'}" Style="{StaticResource H1}" VerticalAlignment="Center" />
                     </StackPanel>
 
@@ -21,13 +21,13 @@
                                   DisplayMemberPath="NativeName" AutomationProperties.Name="Language" />
                         <TextBlock Text="{l:T '🌐 Язык интерфейса'}" VerticalAlignment="Center" />
                     </DockPanel>
-                    <Border CornerRadius="10" Padding="12,8" Margin="0,8,0,0" Background="#2222C55E" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
+                    <v:PixelBorder CornerRadius="10" Padding="12,8" Margin="0,8,0,0" Background="#2222C55E" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
                             Visibility="{Binding LanguageRestartNeeded, Converter={StaticResource VisibleIf}}">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:T 'Перезапустить'}" Command="{Binding RestartForLanguageCommand}" />
                             <TextBlock Text="{l:T 'Язык сменится после перезапуска лаунчера.'}" VerticalAlignment="Center" TextWrapping="Wrap" />
                         </DockPanel>
-                    </Border>
+                    </v:PixelBorder>
                     <TextBlock Style="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
                                Text="{l:T 'Нашли ошибку в переводе? Напишите нам в Discord — переводы обновляются вместе с лаунчером.'}" />
 
@@ -44,10 +44,10 @@
                     <Button Style="{StaticResource GhostButton}" Content="{l:T 'Открыть папку данных'}" Command="{Binding OpenDataFolderCommand}"
                             HorizontalAlignment="Left" Margin="0,16,0,0" />
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
 
             <!-- Обновления -->
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+            <v:PixelBorder Style="{StaticResource Card}" Margin="0,12,0,0">
                 <StackPanel>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:T 'Проверить сейчас'}" Command="{Binding CheckUpdateCommand}" />
@@ -63,9 +63,9 @@
                     <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource Muted}" Margin="0,10,0,0" Foreground="{DynamicResource AccentBrush}"
                                Visibility="{Binding UpdateStatus, Converter={StaticResource VisibleIf}}" />
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+            <v:PixelBorder Style="{StaticResource Card}" Margin="0,12,0,0">
                 <StackPanel>
                     <TextBlock Text="{l:T 'Трей и напоминания'}" Style="{StaticResource H2}" />
                     <CheckBox Style="{StaticResource Toggle}" Margin="0,12,0,0" IsChecked="{Binding MinimizeToTray}"
@@ -75,10 +75,10 @@
                         <TextBlock Text="{l:T 'Напоминать сделать перерыв во время игры'}" VerticalAlignment="Center" />
                     </DockPanel>
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
 
             <!-- Горячие клавиши -->
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+            <v:PixelBorder Style="{StaticResource Card}" Margin="0,12,0,0">
                 <StackPanel>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T 'По умолчанию'}" Command="{Binding ResetHotkeysCommand}" />
@@ -102,9 +102,9 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+            <v:PixelBorder Style="{StaticResource Card}" Margin="0,12,0,0">
                 <StackPanel>
                     <TextBlock Text="{l:T 'Темы'}" Style="{StaticResource H2}" />
                     <TextBlock Text="{l:T 'Премиум-темы открываются подпиской. Если подписка закончится — вернётся «Болото».'}" Style="{StaticResource Muted}" />
@@ -123,7 +123,7 @@
                                 <Button Style="{StaticResource ImageButton}" Margin="0,0,10,10"
                                         Command="{Binding DataContext.ApplyThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}">
-                                    <Border x:Name="Card" Width="150" CornerRadius="12" Padding="12" BorderThickness="2" BorderBrush="#33FFFFFF" Background="{Binding Theme.Surface}">
+                                    <v:PixelBorder x:Name="Card" Width="150" CornerRadius="12" Padding="12" BorderThickness="2" BorderBrush="#33FFFFFF" Background="{Binding Theme.Surface}">
                                         <StackPanel>
                                             <StackPanel Orientation="Horizontal">
                                                 <Ellipse Width="22" Height="22" Fill="{Binding Theme.Accent}" />
@@ -136,7 +136,7 @@
                                             <TextBlock Text="{l:T '🔒 Заблокирована'}" FontSize="11" Foreground="{DynamicResource WarnBrush}"
                                                        Visibility="{Binding Unlocked, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
                                         </StackPanel>
-                                    </Border>
+                                    </v:PixelBorder>
                                 </Button>
                                 <DataTemplate.Triggers>
                                     <DataTrigger Binding="{Binding IsActive}" Value="True">
@@ -147,7 +147,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

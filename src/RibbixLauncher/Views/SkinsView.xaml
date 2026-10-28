@@ -1,0 +1,111 @@
+<UserControl x:Class="RibbixLauncher.Views.SkinsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:RibbixLauncher.Core"
+             xmlns:v="clr-namespace:RibbixLauncher.Views"
+             Style="{StaticResource Page}">
+    <UserControl.Resources>
+        <v:VisibleIfConverter x:Key="VisibleIf" />
+        <v:NotConverter x:Key="Not" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Превью выбранного скина. -->
+        <v:PixelBorder Style="{StaticResource Card}" Margin="0,0,12,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+                    <ContentControl Style="{StaticResource IconTile}" Tag="skin" Foreground="#F472B6" Margin="0,0,12,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{l:T 'Скины'}" Style="{StaticResource H1}" />
+                        <TextBlock Text="{Binding AccountText}" Style="{StaticResource Muted}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Button Style="{StaticResource AccentButton}" Command="{Binding WearCommand}" CommandParameter="{Binding Selected}" HorizontalAlignment="Stretch"
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource Not}}" Content="{l:T '👕 Надеть'}" />
+                    <WrapPanel Margin="0,8,0,0" HorizontalAlignment="Center">
+                        <Button Style="{StaticResource GhostButton}" Command="{Binding ToggleModelCommand}" CommandParameter="{Binding Selected}" Margin="0,0,8,0"
+                                Content="{l:T 'Steve / Alex'}" ToolTip="{l:T 'Модель: широкие руки (Steve) или тонкие (Alex)'}" />
+                        <Button Style="{StaticResource DangerButton}" Command="{Binding RemoveCommand}" CommandParameter="{Binding Selected}" Content="{l:T 'Удалить'}" />
+                    </WrapPanel>
+                    <Button Style="{StaticResource GhostButton}" Command="{Binding TakeOffCommand}" Content="{l:T 'Снять скин'}" Margin="0,8,0,0" HorizontalAlignment="Center" />
+                </StackPanel>
+                <Grid Margin="0,14">
+                    <v:SkinPreview Source="{Binding Selected.Path}" Slim="{Binding Selected.Slim}" />
+                    <TextBlock Text="{l:T 'Добавьте первый скин →'}" Style="{StaticResource Muted}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Visibility="{Binding Items.Count, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
+                </Grid>
+            </DockPanel>
+        </v:PixelBorder>
+
+        <!-- Библиотека и добавление. -->
+        <v:PixelBorder Grid.Column="1" Style="{StaticResource Card}">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top">
+                    <TextBlock Text="{l:T 'Мои скины'}" Style="{StaticResource H2}" />
+                    <TextBlock Text="{Binding HowText}" Style="{StaticResource Muted}" Margin="0,4,0,10" />
+                    <WrapPanel>
+                        <Button Style="{StaticResource AccentButton}" Command="{Binding AddFileCommand}" Content="{l:T '📥 Из файла PNG'}" Margin="0,0,8,8" />
+                        <CheckBox Style="{StaticResource Check}" IsChecked="{Binding NewSlim}" Content="{l:T 'тонкие руки (Alex)'}" VerticalAlignment="Center" Margin="0,0,16,8" />
+                        <Button Style="{StaticResource GhostButton}" Command="{Binding OpenFolderCommand}" Margin="0,0,0,8" Padding="10,6" ToolTip="{l:T 'Папка скинов'}">
+                            <v:PixelIcon Kind="folder" Foreground="#FACC15" Width="18" Height="18" />
+                        </Button>
+                    </WrapPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Command="{Binding AddByNickCommand}" Content="{l:T 'Взять по нику'}" Margin="8,0,0,0"
+                                IsEnabled="{Binding IsBusy, Converter={StaticResource Not}}" />
+                        <TextBox Text="{Binding Nick, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Ник игрока"
+                                 ToolTip="{l:T 'Ник лицензионного игрока — лаунчер скачает его скин с Mojang'}" />
+                    </DockPanel>
+                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button x:Name="Tile" Margin="0,0,10,10" Cursor="Hand" Click="Tile_Click" MouseDoubleClick="Tile_DoubleClick"
+                                        ToolTip="{l:T 'Клик — выбрать, двойной клик — надеть'}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <v:PixelBorder x:Name="Bd" Width="118" Padding="8" Background="#B30A1426" BorderBrush="{StaticResource NeonFrameSoft}"
+                                                           BorderThickness="2" Step="3" Depth="3" Bevel="True">
+                                                <StackPanel>
+                                                    <v:SkinPreview Source="{Binding Path}" Slim="{Binding Slim}" Height="110" />
+                                                    <TextBlock Text="{Binding Name}" FontFamily="{StaticResource PixelFont}" FontSize="15" TextOptions.TextRenderingMode="Aliased"
+                                                               HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,6,0,0" />
+                                                    <TextBlock HorizontalAlignment="Center" FontSize="11">
+                                                        <Run Text="{Binding ModelText, Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" />
+                                                    </TextBlock>
+                                                    <TextBlock x:Name="On" Text="{l:T '✓ надет'}" Foreground="{DynamicResource AccentBrush}" FontSize="12" HorizontalAlignment="Center"
+                                                               Visibility="Collapsed" FontWeight="SemiBold" />
+                                                </StackPanel>
+                                            </v:PixelBorder>
+                                            <ControlTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                    <Setter TargetName="On" Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Effect">
+                                                        <Setter.Value><DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="14" ShadowDepth="0" Opacity="0.8" /></Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </v:PixelBorder>
+    </Grid>
+</UserControl>

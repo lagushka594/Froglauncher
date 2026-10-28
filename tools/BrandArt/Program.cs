@@ -21,6 +21,7 @@ static class Program
             case "logo": Logo(a[1], a[2], a[3], I(4), I(5)); break;
             case "title": Title(a[1], a[2], I(3), I(4), I(5), I(6), a.Length > 7 ? I(7) : 0); break;
             case "overlay": Overlay(a[1], a[2], a[3], I(4), I(5), I(6), I(7)); break;
+            case "resize": Img.Load(a[1]).Trim().Resize(I(3), I(4)).Save(a[2]); break;
             case "bbox":
                 var img = Img.Load(a[1]);
                 Console.WriteLine(img.TextBox(I(2), I(3), I(4), I(5)));

@@ -46,6 +46,10 @@ public sealed class LauncherOptions
     /// <summary>Новогодний плейлист (кнопка на главной в праздники).</summary>
     public string NewYearPlaylistUrl { get; set; } = "https://www.youtube.com/results?search_query=minecraft+christmas+music";
     public string DiscordPurchaseUrl { get; set; } = "https://discord.gg/u6zJZ7BzU5";
+    /// <summary>Соцсети Ribbix — во вкладке «Помощь».</summary>
+    public string DiscordUrl { get; set; } = "https://discord.gg/u6zJZ7BzU5";
+    public string TikTokUrl { get; set; } = "https://www.tiktok.com/@froglauncher_official";
+    public string YouTubeUrl { get; set; } = "https://www.youtube.com/@Ribbix_launcher";
 }
 
 /// <summary>Все пути лаунчера. Данные — в %AppData%\RibbixLauncher, права администратора не нужны.</summary>

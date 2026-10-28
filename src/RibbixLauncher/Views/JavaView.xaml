@@ -7,10 +7,10 @@
     <UserControl.Resources>
         <v:VisibleIfConverter x:Key="VisibleIf" />
     </UserControl.Resources>
-    <Border Style="{StaticResource Card}">
+    <v:PixelBorder Style="{StaticResource Card}">
         <DockPanel>
             <DockPanel DockPanel.Dock="Top">
-                <Image Source="/Assets/ui/java.png" Height="54" Margin="0,0,14,0" />
+                <ContentControl Style="{StaticResource IconTile}" Tag="java" Foreground="#F97316" Width="52" Height="52" FontSize="30" Margin="0,0,14,0" />
                 <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T '⟳ Найти заново'}" Command="{Binding RefreshCommand}" VerticalAlignment="Center" />
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="Java" Style="{StaticResource H1}" />
@@ -35,7 +35,7 @@
             <ItemsControl ItemsSource="{Binding Runtimes}" Margin="0,16,0,0">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border CornerRadius="10" Padding="12,8" Margin="0,3" Background="#10FFFFFF">
+                        <v:PixelBorder CornerRadius="10" Padding="12,8" Margin="0,3" Background="#10FFFFFF">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding Source}" Style="{StaticResource Muted}" VerticalAlignment="Center" />
                                 <StackPanel>
@@ -43,10 +43,10 @@
                                     <TextBlock Text="{Binding JavaExe}" Style="{StaticResource Muted}" FontSize="11" FontFamily="Consolas" />
                                 </StackPanel>
                             </DockPanel>
-                        </Border>
+                        </v:PixelBorder>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </DockPanel>
-    </Border>
+    </v:PixelBorder>
 </UserControl>

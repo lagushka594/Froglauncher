@@ -1,0 +1,626 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:v="clr-namespace:RibbixLauncher.Views">
+
+    <!--
+        Стиль Ribbix «пиксель-неон», как логотип: углы лесенкой, неоновые рамки фиолетовый → голубой,
+        пиксельный шрифт на кнопках и заголовках, кнопки на «подставке» (нажатие опускает их на пиксели).
+        Цвета акцента — из ThemeService (AccentBrush, AccentGradient), поэтому сезонные темы работают как раньше.
+    -->
+
+    <!-- Tiny5 — кнопки, меню, подзаголовки (чётко на 10/15/20); Press Start 2P — заголовки и «ИГРАТЬ» (8/16/24). -->
+    <FontFamily x:Key="PixelFont">pack://application:,,,/RibbixLauncher;component/Assets/fonts/#Tiny5</FontFamily>
+    <FontFamily x:Key="TitleFont">pack://application:,,,/RibbixLauncher;component/Assets/fonts/#Press Start 2P</FontFamily>
+
+    <SolidColorBrush x:Key="InkBrush" Color="#050B1C" />
+    <SolidColorBrush x:Key="PlateBrush" Color="#E60B1530" />
+    <LinearGradientBrush x:Key="NeonFrame" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#8B5CF6" Offset="0" />
+        <GradientStop Color="#22D3EE" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="NeonFrameSoft" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#A08B5CF6" Offset="0" />
+        <GradientStop Color="#A022D3EE" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- Заголовки — пиксельным шрифтом, основной текст остаётся Segoe UI ради читаемости. -->
+    <Style x:Key="H1" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontFamily" Value="{StaticResource TitleFont}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="LineHeight" Value="24" />
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+    </Style>
+    <Style x:Key="H2" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="FontFamily" Value="{StaticResource PixelFont}" />
+        <Setter Property="FontSize" Value="20" />
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+    </Style>
+
+    <!-- ===== Кнопки ===== -->
+
+    <!-- Общий шаблон: плашка-лесенка на подставке; наведение — неоновое свечение, нажатие — кнопка опускается. -->
+    <ControlTemplate x:Key="PixelButtonTemplate" TargetType="Button">
+        <v:PixelBorder x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                       BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}"
+                       Step="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, TargetNullValue=3, FallbackValue=3}"
+                       Depth="4" Bevel="True" SnapsToDevicePixels="True">
+            <ContentPresenter Margin="0,0,0,4" HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+        </v:PixelBorder>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bd" Property="Effect">
+                    <Setter.Value><DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="16" ShadowDepth="0" Opacity="0.85" /></Setter.Value>
+                </Setter>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Bd" Property="Depth" Value="0" />
+                <Setter TargetName="Bd" Property="Margin" Value="0,4,0,0" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Bd" Property="Opacity" Value="0.4" />
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- Главная кнопка: заливка акцента, тёмный контур. -->
+    <Style x:Key="AccentButton" TargetType="Button">
+        <Setter Property="Foreground" Value="#06210F" />
+        <Setter Property="FontFamily" Value="{StaticResource PixelFont}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Padding" Value="18,7" />
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Background" Value="{DynamicResource AccentGradient}" />
+        <Setter Property="BorderBrush" Value="{StaticResource InkBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template" Value="{StaticResource PixelButtonTemplate}" />
+    </Style>
+
+    <!-- Второстепенная: тёмная плашка с неоновой рамкой; при наведении рамка — цвет акцента. -->
+    <Style x:Key="GhostButton" TargetType="Button">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource PixelFont}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Background" Value="{StaticResource PlateBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource NeonFrame}" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template" Value="{StaticResource PixelButtonTemplate}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+        <Setter Property="Foreground" Value="#FCA5A5" />
+    </Style>
+
+    <!-- Большая «ИГРАТЬ». -->
+    <Style x:Key="PlayButton" TargetType="Button" BasedOn="{StaticResource AccentButton}">
+        <Setter Property="FontFamily" Value="{StaticResource TitleFont}" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="Padding" Value="34,10" />
+        <Setter Property="BorderThickness" Value="3" />
+        <Setter Property="Tag" Value="5" />
+    </Style>
+
+    <!-- Пункт бокового меню: иконка (Tag — вид PixelIcon) и подпись (Content). Выбранный — подсветка акцентом. -->
+    <Style x:Key="NavItem" TargetType="RadioButton">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource PixelFont}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <v:PixelBorder x:Name="Bd" Background="#B30A1426" BorderBrush="{StaticResource NeonFrameSoft}" BorderThickness="2"
+                                   Step="3" Depth="3" Bevel="True" Padding="4,3,4,6" SnapsToDevicePixels="True">
+                        <StackPanel HorizontalAlignment="Center">
+                            <v:PixelIcon x:Name="Icon" Kind="{TemplateBinding Tag}" Width="18" Height="18" Foreground="{TemplateBinding Foreground}" />
+                            <TextBlock x:Name="Text" Text="{TemplateBinding Content}" FontFamily="{TemplateBinding FontFamily}" FontSize="{TemplateBinding FontSize}"
+                                       Foreground="{TemplateBinding Foreground}" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </v:PixelBorder>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource NeonFrame}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Bd" Property="Background" Value="#CC0D2418" />
+                            <Setter TargetName="Bd" Property="Effect">
+                                <Setter.Value><DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="18" ShadowDepth="0" Opacity="0.75" /></Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Сегмент переключателя (Месяц/Год). -->
+    <Style x:Key="Segment" TargetType="RadioButton">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource PixelFont}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <v:PixelBorder x:Name="Bd" Step="3" Padding="16,5" Background="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center" />
+                    </v:PixelBorder>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentGradient}" />
+                            <Setter TargetName="Bd" Property="Bevel" Value="True" />
+                            <Setter Property="Foreground" Value="#06210F" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Плитка-иконка заголовка страницы: неоновая плашка-лесенка, внутри v:PixelIcon (Tag — вид, FontSize — размер иконки). -->
+    <Style x:Key="IconTile" TargetType="ContentControl">
+        <Setter Property="Width" Value="52" />
+        <Setter Property="Height" Value="52" />
+        <Setter Property="FontSize" Value="30" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContentControl">
+                    <v:PixelBorder Background="#CC0A1426" BorderBrush="{StaticResource NeonFrame}" BorderThickness="2" Step="3" Bevel="True">
+                        <v:PixelIcon Kind="{TemplateBinding Tag}" Foreground="{TemplateBinding Foreground}"
+                                     Width="{TemplateBinding FontSize}" Height="{TemplateBinding FontSize}" />
+                    </v:PixelBorder>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===== Карточки, поля, прогресс ===== -->
+
+    <!-- Карточка: для v:PixelBorder — лесенка и неоновая рамка; для обычного Border — почти квадратные углы. -->
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource NeonFrameSoft}" />
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="CornerRadius" Value="3" />
+        <Setter Property="Padding" Value="18" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+    </Style>
+
+    <Style TargetType="TextBox">
+        <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <v:PixelBorder x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                   BorderThickness="2" Step="3" Bevel="False">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                    </v:PixelBorder>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="PasswordBox">
+        <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="PasswordBox">
+                    <v:PixelBorder x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource LineBrush}"
+                                   BorderThickness="2" Step="3" Bevel="False">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" />
+                    </v:PixelBorder>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Прогресс: тёмный жёлоб и полоса акцента, обе — лесенкой. -->
+    <Style TargetType="ProgressBar">
+        <Setter Property="Height" Value="10" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentGradient}" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Grid>
+                        <v:PixelBorder x:Name="PART_Track" Background="#CC050B1C" BorderBrush="{StaticResource NeonFrameSoft}" BorderThickness="1"
+                                       Step="2" Bevel="False" />
+                        <v:PixelBorder x:Name="PART_Indicator" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" Step="2" Margin="1" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <!-- ===== Переключатели, флажки, списки ===== -->
+
+    <!-- Переключатель: жёлоб-лесенка, квадратный «пиксель»-бегунок, включён — заливка акцента. -->
+    <Style x:Key="Toggle" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Grid Width="44" Height="24" Margin="0,0,10,0" VerticalAlignment="Center">
+                            <v:PixelBorder x:Name="Track" Background="#CC050B1C" BorderBrush="{StaticResource NeonFrameSoft}" BorderThickness="2" Step="3" />
+                            <v:PixelBorder x:Name="Knob" Width="16" Height="16" Margin="4,0" HorizontalAlignment="Left" Step="2"
+                                           Background="{DynamicResource MutedBrush}" BorderBrush="{StaticResource InkBrush}" BorderThickness="2" />
+                        </Grid>
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentGradient}" />
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource InkBrush}" />
+                            <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="Knob" Property="Background" Value="#F0FFF4" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Track" Property="Effect">
+                                <Setter.Value><DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="10" ShadowDepth="0" Opacity="0.7" /></Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Флажок: квадрат-лесенка, отметка — пиксельная «галочка» из клеток. -->
+    <Style x:Key="Check" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Grid Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center">
+                            <v:PixelBorder x:Name="Box" Background="#CC050B1C" BorderBrush="{StaticResource NeonFrameSoft}" BorderThickness="2" Step="2" />
+                            <Path x:Name="Mark" Visibility="Collapsed" Fill="#06210F" SnapsToDevicePixels="True"
+                                  Data="M4,10 h2 v2 h2 v-2 h2 v-2 h2 v-2 h2 v2 h-2 v2 h-2 v2 h-2 v2 h-2 v-2 h-2 z" />
+                        </Grid>
+                        <ContentPresenter VerticalAlignment="Center" />
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Box" Property="Background" Value="{DynamicResource AccentBrush}" />
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{StaticResource InkBrush}" />
+                            <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Обычный RadioButton (выбор формата экспорта и т. п.): квадратная «точка». -->
+    <Style TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <DockPanel Background="Transparent">
+                        <Grid DockPanel.Dock="Left" Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Top">
+                            <v:PixelBorder x:Name="Box" Background="#CC050B1C" BorderBrush="{StaticResource NeonFrameSoft}" BorderThickness="2" Step="3" />
+                            <Rectangle x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource AccentBrush}" Visibility="Collapsed" />
+                        </Grid>
+                        <ContentPresenter VerticalAlignment="Center">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="ComboBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBoxItem">
+                    <v:PixelBorder x:Name="Bd" Padding="{TemplateBinding Padding}" Background="Transparent" Step="2">
+                        <ContentPresenter />
+                    </v:PixelBorder>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#3322C55E" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#5522C55E" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Выпадающий список: плашка-лесенка со стрелкой из клеток, список — в неоновой рамке. -->
+    <Style TargetType="ComboBox">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ComboBox">
+                    <Grid>
+                        <ToggleButton x:Name="Toggle" Focusable="False" ClickMode="Press"
+                                      IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <v:PixelBorder x:Name="Bd" Background="{DynamicResource InputBrush}" BorderBrush="{StaticResource NeonFrameSoft}"
+                                                   BorderThickness="2" Step="3">
+                                        <Path HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" SnapsToDevicePixels="True"
+                                              Data="M0,0 h10 v2 h-2 v2 h-2 v2 h-2 v-2 h-2 v-2 h-2 z" Fill="{DynamicResource AccentBrush}" />
+                                    </v:PixelBorder>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <ContentPresenter Margin="12,0,32,0" VerticalAlignment="Center" IsHitTestVisible="False"
+                                          Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+                        <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom"
+                               AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                            <v:PixelBorder Background="{DynamicResource PanelSolidBrush}" BorderBrush="{StaticResource NeonFrame}" BorderThickness="2"
+                                           Step="3" Margin="0,4,0,0" Padding="4"
+                                           MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                           MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                <ScrollViewer>
+                                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
+                                </ScrollViewer>
+                            </v:PixelBorder>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate><VirtualizingStackPanel /></ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Полоса прокрутки: тонкий «пиксельный» бегунок. -->
+    <Style TargetType="ScrollBar">
+        <Setter Property="Width" Value="8" />
+        <Setter Property="MinWidth" Value="8" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Track x:Name="PART_Track" IsDirectionReversed="True">
+                        <Track.Thumb>
+                            <Thumb>
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <v:PixelBorder x:Name="T" Background="#8022D3EE" Step="2" Margin="1,0" />
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="T" Property="Background" Value="{DynamicResource AccentBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Track.Thumb>
+                    </Track>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Height" Value="0" />
+                <Setter Property="MinHeight" Value="0" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Ползунок: жёлоб с заливкой до бегунка, бегунок — квадрат с контуром. -->
+    <Style TargetType="Slider">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="MinHeight" Value="24" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Slider">
+                    <Grid VerticalAlignment="Center">
+                        <v:PixelBorder Height="8" Background="#CC050B1C" BorderBrush="{StaticResource NeonFrameSoft}" BorderThickness="1" Step="2" />
+                        <Track x:Name="PART_Track">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Command="Slider.DecreaseLarge" Focusable="False">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <v:PixelBorder Height="6" Margin="1,0,0,0" Background="{DynamicResource AccentGradient}" Step="1" />
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Command="Slider.IncreaseLarge" Focusable="False">
+                                    <RepeatButton.Template>
+                                        <ControlTemplate TargetType="RepeatButton">
+                                            <Border Background="Transparent" />
+                                        </ControlTemplate>
+                                    </RepeatButton.Template>
+                                </RepeatButton>
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <v:PixelBorder x:Name="K" Width="16" Height="20" Step="2" Background="#F0FFF4" BorderBrush="{StaticResource InkBrush}"
+                                                           BorderThickness="2" Bevel="True" />
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="K" Property="Effect">
+                                                        <Setter.Value><DropShadowEffect Color="{DynamicResource AccentColor}" BlurRadius="10" ShadowDepth="0" Opacity="0.9" /></Setter.Value>
+                                                    </Setter>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Подсказка: тёмная плашка в неоновой рамке. -->
+    <Style TargetType="ToolTip">
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="MaxWidth" Value="420" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <v:PixelBorder Background="#F20B1530" BorderBrush="{StaticResource NeonFrame}" BorderThickness="2" Step="3" Padding="10,6">
+                        <ContentPresenter>
+                            <ContentPresenter.Resources>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
+                    </v:PixelBorder>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Бейдж ADMIN. -->
+    <Style x:Key="AdminBadge" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource AdminBrush}" />
+        <Setter Property="CornerRadius" Value="2" />
+        <Setter Property="Padding" Value="7,2" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Effect">
+            <Setter.Value><DropShadowEffect Color="#7C3AED" BlurRadius="12" ShadowDepth="0" Opacity="0.9" /></Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Вкладки: пиксельные «таблички», выбранная — с подсветкой акцентом. -->
+    <Style x:Key="SettingsTabs" TargetType="TabControl">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0,10,0,0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <DockPanel>
+                        <WrapPanel DockPanel.Dock="Top" IsItemsHost="True" />
+                        <ContentPresenter ContentSource="SelectedContent" Margin="{TemplateBinding Padding}" />
+                    </DockPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="TabItem">
+                    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+                    <Setter Property="Cursor" Value="Hand" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TabItem">
+                                <v:PixelBorder x:Name="Bd" Padding="12,5,12,8" Margin="0,0,6,6" Background="#990A1426" BorderBrush="{StaticResource NeonFrameSoft}"
+                                               BorderThickness="2" Step="3" Depth="3">
+                                    <ContentPresenter ContentSource="Header" TextElement.FontFamily="{StaticResource PixelFont}" TextElement.FontSize="15"
+                                                      TextOptions.TextRenderingMode="Aliased" />
+                                </v:PixelBorder>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                        <Setter TargetName="Bd" Property="Background" Value="#CC0D2418" />
+                                        <Setter TargetName="Bd" Property="Bevel" Value="True" />
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

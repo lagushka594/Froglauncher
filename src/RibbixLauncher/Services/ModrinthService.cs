@@ -119,6 +119,34 @@ public sealed class ModrinthService(IHttpClientFactory httpFactory, DownloadServ
         }
     }
 
+    /// <summary>
+    /// Ресурспак, шейдер или датапак с Modrinth в версию: файл под её Minecraft (релиз, иначе что есть) —
+    /// в resourcepacks, shaderpacks или saves/&lt;мир&gt;/datapacks. Возвращает имя файла.
+    /// </summary>
+    public async Task<string> InstallFileAsync(Instance inst, string projectId, string projectType, string? world, CancellationToken ct)
+    {
+        var folder = projectType switch
+        {
+            "resourcepack" => Path.Combine(inst.GameDirectory, "resourcepacks"),
+            "shader" => Path.Combine(inst.GameDirectory, "shaderpacks"),
+            "datapack" => world is { Length: > 0 } w ? Path.Combine(inst.GameDirectory, "saves", Path.GetFileName(w), "datapacks")
+                : throw new ModsException(L.T("Выберите мир, в который положить датапак")),
+            _ => throw new ModsException(L.T("Неизвестный тип файла")),
+        };
+        var url = $"{Api}project/{projectId}/version?game_versions={Uri.EscapeDataString($"[\"{inst.GameVersion}\"]")}" +
+                  (projectType == "datapack" ? "&loaders=" + Uri.EscapeDataString("[\"datapack\"]") : "");
+        var versions = JsonNode.Parse(await Http.GetStringAsync(url, ct))!.AsArray();
+        var version = versions.FirstOrDefault(v => v!["version_type"]?.GetValue<string>() == "release") ?? versions.FirstOrDefault()
+                      ?? throw new ModsException(L.T($"Нет файла под Minecraft {inst.GameVersion}"));
+        var files = version["files"]!.AsArray();
+        var file = files.FirstOrDefault(f => f!["primary"]?.GetValue<bool>() == true) ?? files.First();
+        var name = Path.GetFileName(file!["filename"]!.GetValue<string>());
+        await downloads.DownloadFileAsync(new DownloadItem(file["url"]!.GetValue<string>(), Path.Combine(folder, name),
+            file["hashes"]?["sha1"]?.GetValue<string>(), file["size"]?.GetValue<long>() ?? 0), ct);
+        log.LogInformation("{Type} {File} → {Instance}", projectType, name, inst.Id);
+        return name;
+    }
+
     /// <summary>Удалить jar из папки mods (и запись о моде из каталога, если есть).</summary>
     public void Remove(Instance inst, string fileName)
     {

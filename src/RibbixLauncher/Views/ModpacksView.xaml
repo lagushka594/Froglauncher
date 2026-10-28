@@ -8,43 +8,78 @@
         <v:VisibleIfConverter x:Key="VisibleIf" />
     </UserControl.Resources>
 
-    <Border Style="{StaticResource Card}">
+    <v:PixelBorder Style="{StaticResource Card}">
         <DockPanel>
             <!-- Заголовок и фильтры -->
             <StackPanel DockPanel.Dock="Top">
                 <StackPanel Orientation="Horizontal">
-                    <Image Source="/Assets/ui/item_block.png" Height="44" Margin="0,0,12,0" />
+                    <ContentControl Style="{StaticResource IconTile}" Tag="modpack" Foreground="#A78BFA" Width="52" Height="52" FontSize="30" Margin="0,0,12,0" />
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="{l:T 'Сборки'}" Style="{StaticResource H1}" />
+                        <TextBlock Text="{l:T 'Каталог Modrinth'}" Style="{StaticResource H1}" />
                         <TextBlock Style="{StaticResource Muted}"
-                                   Text="{l:T 'Готовые модпаки с Modrinth: версия игры, модлоадер, моды и настройки ставятся одним кликом.'}" />
+                                   Text="{l:T 'Сборки, моды, ресурспаки, шейдеры и датапаки — выберите, что искать и в какую версию поставить.'}" />
                     </StackPanel>
                 </StackPanel>
 
-                <Grid Margin="0,14,0,0">
+                <!-- Что ищем. -->
+                <ItemsControl ItemsSource="{Binding Kinds}" Margin="0,14,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <RadioButton Style="{StaticResource Segment}" GroupName="kind" Margin="0,0,6,6"
+                                         IsChecked="{Binding IsSelected, Mode=OneWay}" Checked="Kind_Checked">
+                                <StackPanel Orientation="Horizontal">
+                                    <v:PixelIcon Kind="{Binding Icon}" Width="14" Height="14" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </RadioButton>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Куда ставим (для всего, кроме сборок). -->
+                <WrapPanel Margin="0,4,0,0" Visibility="{Binding IsModpacks, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
+                    <TextBlock Text="{l:T 'Скачать в версию'}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox ItemsSource="{Binding Targets}" SelectedItem="{Binding Target}" MinWidth="260" Margin="0,0,16,0" AutomationProperties.Name="Версия">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock><Run Text="{Binding Name, Mode=OneWay}" /><Run Text=" · " Foreground="{DynamicResource MutedBrush}" /><Run Text="{Binding DisplayVersion, Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" /></TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <StackPanel Orientation="Horizontal" Visibility="{Binding IsDatapacks, Converter={StaticResource VisibleIf}}">
+                        <TextBlock Text="{l:T 'мир'}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <ComboBox ItemsSource="{Binding TargetWorlds}" SelectedItem="{Binding TargetWorld}" MinWidth="200" AutomationProperties.Name="Мир" />
+                    </StackPanel>
+                </WrapPanel>
+
+                <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="170" />
                         <ColumnDefinition Width="150" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBox Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Поиск сборок"
-                             ToolTip="{l:T 'Например: optimized, create, skyblock'}" />
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding LoaderFilters}" SelectedItem="{Binding SelectedLoader}" Margin="8,0,0,0" />
+                    <TextBox Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Поиск"
+                             ToolTip="{l:T 'Например: optimized, sodium, faithful, complementary'}" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding LoaderFilters}" SelectedItem="{Binding SelectedLoader}" Margin="8,0,0,0"
+                              Visibility="{Binding IsModpacks, Converter={StaticResource VisibleIf}}" />
                     <ComboBox Grid.Column="2" ItemsSource="{Binding GameVersions}" SelectedItem="{Binding SelectedVersion}" Margin="8,0,0,0"
-                              MaxDropDownHeight="320" />
+                              MaxDropDownHeight="320" Visibility="{Binding IsModpacks, Converter={StaticResource VisibleIf}}" />
                     <Button Grid.Column="3" Style="{StaticResource AccentButton}" Content="{l:T 'Найти'}" Command="{Binding SearchCommand}" Margin="8,0,0,0" IsDefault="True" />
                 </Grid>
 
                 <!-- Лимит версий -->
-                <Border CornerRadius="10" Padding="12" Margin="0,10,0,0" Background="#22F59E0B" BorderBrush="#F59E0B" BorderThickness="1"
+                <v:PixelBorder CornerRadius="10" Padding="12" Margin="0,10,0,0" Background="#22F59E0B" BorderBrush="#F59E0B" BorderThickness="1"
                         Visibility="{Binding Upsell, Converter={StaticResource VisibleIf}}">
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T 'Сравнить'}" Command="{Binding CompareCommand}" />
                         <Image Source="/Assets/ui/frog_surprise.png" Height="28" Margin="0,0,8,0" />
                         <TextBlock Text="{Binding Upsell}" TextWrapping="Wrap" VerticalAlignment="Center" />
                     </DockPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <!-- Прогресс установки -->
                 <StackPanel Margin="0,12,0,0" Visibility="{Binding Progress.IsActive, Converter={StaticResource VisibleIf}}">
@@ -68,7 +103,7 @@
                     <ItemsControl ItemsSource="{Binding Results}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="12" Padding="12,10" Margin="0,4" Background="#10FFFFFF">
+                                <v:PixelBorder CornerRadius="12" Padding="12,10" Margin="0,4" Background="#10FFFFFF">
                                     <DockPanel>
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                                             <Button Style="{StaticResource GhostButton}" Content="Modrinth ↗" Margin="0,0,8,0" Padding="10,6"
@@ -81,14 +116,14 @@
                                                         Visibility="{Binding IsInstalled, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
                                                 <TextBlock Text="{l:T '✓ Установлена'}" Foreground="{DynamicResource AccentBrush}" FontWeight="SemiBold" VerticalAlignment="Center"
                                                            Visibility="{Binding IsInstalled, Converter={StaticResource VisibleIf}}" />
-                                                <Border Background="#E00D1528" CornerRadius="9" Visibility="{Binding IsInstalling, Converter={StaticResource VisibleIf}}">
+                                                <v:PixelBorder Background="#E00D1528" CornerRadius="9" Visibility="{Binding IsInstalling, Converter={StaticResource VisibleIf}}">
                                                     <Image Source="/Assets/ui/loader.png" Height="26" Style="{StaticResource Spinning}" />
-                                                </Border>
+                                                </v:PixelBorder>
                                             </Grid>
                                         </StackPanel>
-                                        <Border DockPanel.Dock="Left" Width="56" Height="56" CornerRadius="10" Margin="0,0,12,0" Background="#22FFFFFF" ClipToBounds="True">
+                                        <v:PixelBorder DockPanel.Dock="Left" Width="56" Height="56" CornerRadius="10" Margin="0,0,12,0" Background="#22FFFFFF" ClipToBounds="True">
                                             <Image Source="{Binding Hit.IconUrl, TargetNullValue=/Assets/ui/item_block.png}" Stretch="UniformToFill" />
-                                        </Border>
+                                        </v:PixelBorder>
                                         <StackPanel VerticalAlignment="Center">
                                             <TextBlock FontWeight="SemiBold" FontSize="15">
                                                 <Run Text="{Binding Hit.Title, Mode=OneWay}" />
@@ -100,7 +135,7 @@
                                             </TextBlock>
                                         </StackPanel>
                                     </DockPanel>
-                                </Border>
+                                </v:PixelBorder>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -111,5 +146,5 @@
                 </StackPanel>
             </ScrollViewer>
         </DockPanel>
-    </Border>
+    </v:PixelBorder>
 </UserControl>

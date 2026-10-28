@@ -8,7 +8,7 @@
         <v:VisibleIfConverter x:Key="VisibleIf" />
     </UserControl.Resources>
 
-    <Border Style="{StaticResource Card}">
+    <v:PixelBorder Style="{StaticResource Card}">
         <DockPanel>
             <StackPanel DockPanel.Dock="Top">
                 <DockPanel>
@@ -16,7 +16,7 @@
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '+ Свой сервер'}" Command="{Binding ToggleAddCommand}" Margin="0,0,8,0" />
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '⟳ Обновить'}" Command="{Binding RefreshCommand}" />
                     </StackPanel>
-                    <Image Source="/Assets/ui/biome_icon.png" Height="44" Margin="0,0,12,0" />
+                    <ContentControl Style="{StaticResource IconTile}" Tag="servers" Foreground="#38BDF8" Width="52" Height="52" FontSize="30" Margin="0,0,12,0" />
                     <StackPanel VerticalAlignment="Center">
                         <TextBlock Text="{l:T 'Серверы'}" Style="{StaticResource H1}" />
                         <TextBlock Style="{StaticResource Muted}" Text="{l:T 'Живой онлайн и пинг. «Играть» запускает игру и сразу подключает к серверу.'}" />
@@ -24,7 +24,7 @@
                 </DockPanel>
 
                 <!-- Свой сервер -->
-                <Border CornerRadius="10" Padding="12" Margin="0,12,0,0" Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                <v:PixelBorder CornerRadius="10" Padding="12" Margin="0,12,0,0" Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
                         Visibility="{Binding ShowAdd, Converter={StaticResource VisibleIf}}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -37,7 +37,7 @@
                                  ToolTip="{l:T 'Адрес: play.example.com или 1.2.3.4:25565'}" AutomationProperties.Name="Адрес сервера" />
                         <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="{l:T 'Добавить'}" Command="{Binding AddServerCommand}" Margin="8,0,0,0" />
                     </Grid>
-                </Border>
+                </v:PixelBorder>
 
                 <!-- Фильтры -->
                 <Grid Margin="0,12,0,0">
@@ -77,7 +77,7 @@
                     <ItemsControl ItemsSource="{Binding Servers}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border CornerRadius="12" Padding="10" Margin="0,4" Background="#10FFFFFF">
+                                <v:PixelBorder CornerRadius="12" Padding="10" Margin="0,4" Background="#10FFFFFF">
                                     <DockPanel>
                                         <!-- Действия -->
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
@@ -118,9 +118,9 @@
                                         </StackPanel>
 
                                         <!-- Иконка сервера (64×64 из ответа сервера) -->
-                                        <Border DockPanel.Dock="Left" Width="52" Height="52" CornerRadius="8" Margin="0,0,12,0" Background="#22FFFFFF" ClipToBounds="True">
+                                        <v:PixelBorder DockPanel.Dock="Left" Width="52" Height="52" CornerRadius="8" Margin="0,0,12,0" Background="#22FFFFFF" ClipToBounds="True">
                                             <Image Source="{Binding Icon, TargetNullValue=/Assets/ui/item_block.png}" RenderOptions.BitmapScalingMode="NearestNeighbor" />
-                                        </Border>
+                                        </v:PixelBorder>
                                         <StackPanel VerticalAlignment="Center">
                                             <TextBlock FontSize="15" FontWeight="SemiBold">
                                                 <Run Text="{Binding Name, Mode=OneWay}" />
@@ -133,7 +133,7 @@
                                             </TextBlock>
                                         </StackPanel>
                                     </DockPanel>
-                                </Border>
+                                </v:PixelBorder>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -142,5 +142,5 @@
                 </StackPanel>
             </ScrollViewer>
         </DockPanel>
-    </Border>
+    </v:PixelBorder>
 </UserControl>

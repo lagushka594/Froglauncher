@@ -34,6 +34,7 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     private readonly ModToolsService _modTools;
     private readonly ModBisectService _bisect;
     private readonly FriendLinkService _friends;
+    private readonly SkinService _skins;
 
     /// <summary>
     /// Ссылка «Играть с другом»: подтверждение (ссылка пришла извне) → поставить версию с модами → играть
@@ -166,9 +167,16 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     public HomeViewModel(InstanceService instances, LaunchService launcher, GameAuthService accounts,
         EntitlementService entitlements, DownloadService downloads, SettingsService settings,
         DiscordPresenceService presence, ToastService toasts, PlayStatsService stats, TrayService tray, WorldService worlds,
-        CrashDoctorViewModel doctor, ModToolsService modTools, ModBisectService bisect, FriendLinkService friends, ILogger<HomeViewModel> log)
+        CrashDoctorViewModel doctor, ModToolsService modTools, ModBisectService bisect, FriendLinkService friends, SkinService skins,
+        ILogger<HomeViewModel> log)
     {
+        _skins = skins;
         _friends = friends;
+        // Друг нажал «Присоединиться» в нашем статусе Discord.
+        presence.JoinRequested += secret => Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            if (FriendLinkService.Parse(new Uri("ribbix://play?" + secret)) is { } invite) _ = JoinFriendAsync(invite);
+        });
         Doctor = doctor;
         _modTools = modTools;
         _bisect = bisect;
@@ -287,6 +295,8 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
 
         try
         {
+            // Оффлайн-скин — ресурспаком «Ribbix Skin» (для Microsoft скин уже в профиле Minecraft).
+            _skins.PrepareLaunch(inst, account);
             var session = await _launcher.LaunchAsync(inst, account,
                 _entitlements.IsAllowed(EntitlementKeys.JvmAutotune), progress, _cts.Token, server);
             _instances.Save(inst);
@@ -299,7 +309,8 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
                 L.T($"Играет в Minecraft {inst.GameVersion}"),
                 server is not null ? L.T($"На сервере {server}")
                     : inst.Loader == LoaderType.Vanilla ? inst.Name : $"{inst.Name} · {inst.Loader}",
-                session.StartedAt, SmallImage: "playing", SmallText: account.Name));
+                session.StartedAt, SmallImage: "playing", SmallText: account.Name,
+                JoinSecret: server is not null ? FriendLinkService.JoinSecret(inst, server) : null));
 
             if (_settings.Current.CloseOnLaunch) Application.Current.MainWindow!.WindowState = WindowState.Minimized;
         }

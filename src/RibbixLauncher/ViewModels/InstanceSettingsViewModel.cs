@@ -167,6 +167,14 @@ public partial class InstanceSettingsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Скопировать ссылку и открыть личные сообщения Discord — вставить другу.</summary>
+    [RelayCommand]
+    private void SendInDiscord()
+    {
+        CopyInvite(InviteWebLink ?? InviteLink);
+        Shell.Open("https://discord.com/channels/@me");
+    }
+
     [RelayCommand]
     private void CopyInvite(string? text)
     {

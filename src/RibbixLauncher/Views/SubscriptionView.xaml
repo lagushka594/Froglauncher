@@ -24,7 +24,7 @@
                        Visibility="Collapsed" Margin="0,0,0,6" />
 
             <!-- Текущий тариф. -->
-            <Border Style="{StaticResource Card}">
+            <v:PixelBorder Style="{StaticResource Card}">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '⟳ Обновить'}" Command="{Binding RefreshCommand}" Margin="0,0,8,0" />
@@ -46,24 +46,24 @@
                                    Text="{Binding SignInHint}" TextWrapping="Wrap" />
                     </StackPanel>
                 </DockPanel>
-            </Border>
+            </v:PixelBorder>
 
             <!-- Grace. -->
-            <Border CornerRadius="12" Padding="14,10" Margin="0,10,0,0" Background="#33F59E0B" BorderBrush="{DynamicResource WarnBrush}" BorderThickness="1"
+            <v:PixelBorder CornerRadius="12" Padding="14,10" Margin="0,10,0,0" Background="#33F59E0B" BorderBrush="{DynamicResource WarnBrush}" BorderThickness="1"
                     Visibility="{Binding GraceBanner, Converter={StaticResource VisibleIf}}">
                 <StackPanel Orientation="Horizontal">
-                    <Image Source="/Assets/installer/icon_warning.png" Height="26" Margin="0,0,10,0" />
+                    <v:PixelIcon Kind="warning" Foreground="{DynamicResource WarnBrush}" Width="24" Height="24" Margin="0,0,10,0" VerticalAlignment="Center" />
                     <TextBlock Text="{Binding GraceBanner}" FontWeight="SemiBold" VerticalAlignment="Center" />
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
 
-            <Border CornerRadius="12" Padding="14,8" Margin="0,10,0,0" Background="#223B82F6" BorderBrush="#3B82F6" BorderThickness="1"
+            <v:PixelBorder CornerRadius="12" Padding="14,8" Margin="0,10,0,0" Background="#223B82F6" BorderBrush="#3B82F6" BorderThickness="1"
                     Visibility="{Binding VerificationFailed, Converter={StaticResource VisibleIf}}">
                 <TextBlock Text="{l:T 'Не удалось проверить подписку. Работаем по сохранённым данным, пока сервер недоступен.'}" />
-            </Border>
+            </v:PixelBorder>
 
             <!-- Управление: отмена автопродления и история. -->
-            <Border Style="{StaticResource Card}" Margin="0,10,0,0" Visibility="{Binding ShowManage, Converter={StaticResource VisibleIf}}">
+            <v:PixelBorder Style="{StaticResource Card}" Margin="0,10,0,0" Visibility="{Binding ShowManage, Converter={StaticResource VisibleIf}}">
                 <StackPanel>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Style="{StaticResource DangerButton}" Content="{l:T 'Отключить автопродление'}"
@@ -89,47 +89,47 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
 
             <!-- Блок покупки. Для Admin скрыт целиком. -->
             <StackPanel Margin="0,16,0,0" Visibility="{Binding IsAdmin, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
                 <DockPanel Margin="0,0,0,12">
-                    <Border DockPanel.Dock="Right" Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="10" Padding="3">
+                    <v:PixelBorder DockPanel.Dock="Right" Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1" CornerRadius="10" Padding="3">
                         <StackPanel Orientation="Horizontal">
                             <RadioButton Style="{StaticResource Segment}" GroupName="period" Content="{l:T 'Месяц'}" IsChecked="True" />
                             <RadioButton Style="{StaticResource Segment}" GroupName="period" IsChecked="{Binding IsYearly}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="{l:T 'Год'}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=RadioButton}}" />
-                                    <Border Background="#F59E0B" CornerRadius="5" Padding="5,0" Margin="6,0,0,0">
+                                    <v:PixelBorder Background="#F59E0B" CornerRadius="5" Padding="5,0" Margin="6,0,0,0">
                                         <TextBlock Text="-17%" FontSize="11" FontWeight="Bold" Foreground="#1F1302" />
-                                    </Border>
+                                    </v:PixelBorder>
                                 </StackPanel>
                             </RadioButton>
                         </StackPanel>
-                    </Border>
+                    </v:PixelBorder>
                     <TextBlock Text="{l:T 'Тарифы Ribbix'}" Style="{StaticResource H1}" VerticalAlignment="Center" />
                 </DockPanel>
 
                 <!-- Покупка через тикет в Discord. -->
-                <Border CornerRadius="12" Padding="14,10" Margin="0,0,0,12" Background="#225865F2" BorderBrush="#5865F2" BorderThickness="1"
+                <v:PixelBorder CornerRadius="12" Padding="14,10" Margin="0,0,0,12" Background="#225865F2" BorderBrush="#5865F2" BorderThickness="1"
                         Visibility="{Binding DiscordPurchase, Converter={StaticResource VisibleIf}}">
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T 'Открыть Discord'}" Command="{Binding OpenDiscordCommand}"
                                 VerticalAlignment="Center" BorderBrush="#5865F2" />
-                        <Image Source="/Assets/ui/social_icons.png" Height="30" Margin="0,0,12,0" VerticalAlignment="Center" />
+                        <ContentControl Style="{StaticResource IconTile}" Tag="chat" Foreground="#8B9BFF" Width="40" Height="40" FontSize="24" Margin="0,0,12,0" />
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="{l:T 'Покупка — через тикет в нашем Discord'}" FontWeight="SemiBold" />
                             <TextBlock Style="{StaticResource Muted}" FontSize="12"
                                        Text="{l:T 'Нажмите «Оформить»: заказ скопируется, откроется сервер. Создайте тикет и вставьте заказ — после оплаты вам выдадут роль, нажмите «⟳ Обновить».'}" />
                         </StackPanel>
                     </DockPanel>
-                </Border>
+                </v:PixelBorder>
 
                 <!-- Акция по расписанию. -->
-                <Border CornerRadius="12" Padding="14,10" Margin="0,0,0,12" Background="#22F59E0B" BorderBrush="#F59E0B" BorderThickness="1"
+                <v:PixelBorder CornerRadius="12" Padding="14,10" Margin="0,0,0,12" Background="#22F59E0B" BorderBrush="#F59E0B" BorderThickness="1"
                         Visibility="{Binding EventBanner, Converter={StaticResource VisibleIf}}">
                     <TextBlock Text="{Binding EventBanner}" FontWeight="SemiBold" TextWrapping="Wrap" />
-                </Border>
+                </v:PixelBorder>
 
                 <!-- Промокод. -->
                 <StackPanel Margin="0,0,0,12">
@@ -172,17 +172,17 @@
                         <DataTemplate>
                             <Grid Margin="6,14,6,0">
                                 <!-- Свечение для рекомендуемого тарифа (Ribbix+). -->
-                                <Border x:Name="Glow" CornerRadius="16" Background="{Binding Brush}" Opacity="0" Margin="-2">
+                                <v:PixelBorder x:Name="Glow" CornerRadius="16" Background="{Binding Brush}" Opacity="0" Margin="-2">
                                     <Border.Effect><BlurEffect Radius="22" /></Border.Effect>
-                                </Border>
-                                <Border CornerRadius="16" BorderThickness="2" BorderBrush="{Binding Brush}" Background="#EE0D1528" Padding="14,18,14,14">
+                                </v:PixelBorder>
+                                <v:PixelBorder CornerRadius="16" BorderThickness="2" BorderBrush="{Binding Brush}" Background="#EE0D1528" Padding="14,18,14,14">
                                     <DockPanel>
                                         <StackPanel DockPanel.Dock="Top">
                                             <TextBlock Text="{Binding Name}" FontSize="19" FontWeight="Bold" Foreground="{Binding Brush}" />
-                                            <Border HorizontalAlignment="Left" CornerRadius="6" Padding="6,1" Margin="0,6,0,0" Background="#F59E0B"
+                                            <v:PixelBorder HorizontalAlignment="Left" CornerRadius="6" Padding="6,1" Margin="0,6,0,0" Background="#F59E0B"
                                                     Visibility="{Binding HasDiscount, Converter={StaticResource VisibleIf}}">
                                                 <TextBlock Text="{Binding DiscountBadge}" FontSize="11" FontWeight="Bold" Foreground="#1F1302" TextTrimming="CharacterEllipsis" />
-                                            </Border>
+                                            </v:PixelBorder>
                                             <TextBlock Margin="0,8,0,0">
                                                 <Run Text="{Binding OldPriceText, Mode=OneWay}" FontSize="14" TextDecorations="Strikethrough" Foreground="{DynamicResource MutedBrush}" />
                                                 <Run Text="{Binding PriceText, Mode=OneWay}" FontSize="24" FontWeight="Black" />
@@ -196,10 +196,10 @@
                                             <Button Content="{l:T 'Оформить'}" Style="{StaticResource AccentButton}" Background="{Binding Brush}"
                                                     Command="{Binding DataContext.CheckoutCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
                                                     CommandParameter="{Binding}" Visibility="{Binding CanBuy, Converter={StaticResource VisibleIf}}" />
-                                            <Border CornerRadius="10" Padding="0,9" Background="#22FFFFFF"
+                                            <v:PixelBorder CornerRadius="10" Padding="0,9" Background="#22FFFFFF"
                                                     Visibility="{Binding IsCurrent, Converter={StaticResource VisibleIf}}">
                                                 <TextBlock Text="{l:T '✓ Текущий'}" HorizontalAlignment="Center" FontWeight="SemiBold" />
-                                            </Border>
+                                            </v:PixelBorder>
                                         </Grid>
 
                                         <ItemsControl ItemsSource="{Binding Features}" Margin="0,12,0,0">
@@ -213,11 +213,11 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                     </DockPanel>
-                                </Border>
-                                <Border x:Name="Ribbon" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-12,0,0"
+                                </v:PixelBorder>
+                                <v:PixelBorder x:Name="Ribbon" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,-12,0,0"
                                         Background="{Binding Brush}" CornerRadius="8" Padding="10,3">
                                     <TextBlock Text="{l:T '★ Популярный'}" FontSize="11" FontWeight="Bold" Foreground="#1F1302" />
-                                </Border>
+                                </v:PixelBorder>
                             </Grid>
                             <DataTemplate.Triggers>
                                 <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
@@ -238,7 +238,7 @@
             </StackPanel>
 
             <!-- Юридическое. -->
-            <Border Style="{StaticResource Card}" Margin="0,16,0,0" Padding="14">
+            <v:PixelBorder Style="{StaticResource Card}" Margin="0,16,0,0" Padding="14">
                 <StackPanel>
                     <TextBlock Style="{StaticResource Muted}"
                                Text="{l:T 'Подписка даёт доступ к функциям Ribbix и не связана с Mojang/Microsoft. Minecraft — товарный знак Mojang AB. Ribbix — неофициальный лаунчер; доступ к игре не продаётся, играть можно на любом тарифе.'}" />
@@ -247,7 +247,7 @@
                         <Button Style="{StaticResource LinkButton}" Content="{l:T 'Политика возврата'}" Command="{Binding OpenLinkCommand}" CommandParameter="{Binding RefundUrl}" />
                     </StackPanel>
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -27,6 +27,7 @@
         <DataTemplate DataType="{x:Type vm:ProfileViewModel}"><v:ProfileView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:SubscriptionViewModel}"><v:SubscriptionView /></DataTemplate>
         <DataTemplate DataType="{x:Type vm:AboutViewModel}"><v:AboutView /></DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SkinsViewModel}"><v:SkinsView /></DataTemplate>
     </Window.Resources>
 
     <Grid>
@@ -49,92 +50,46 @@
             </Grid.ColumnDefinitions>
 
             <!-- ===== Боковое меню ===== -->
-            <Border Grid.Column="0" Background="#B3080D18" BorderBrush="{StaticResource FrameGradient}" BorderThickness="0,0,1.5,0">
-                <DockPanel LastChildFill="False" Margin="10,12">
-                    <Image DockPanel.Dock="Top" Source="/Assets/ui/logo_text.png" Height="58" Margin="0,0,0,8"
+            <Border Grid.Column="0" Background="#C0060A16" BorderBrush="{StaticResource NeonFrame}" BorderThickness="0,0,2,0">
+                <DockPanel Margin="10,12">
+                    <Image DockPanel.Dock="Top" Source="/Assets/main/logo.png" Height="64" Margin="0,0,0,6"
                            RenderOptions.BitmapScalingMode="HighQuality" />
-
-                    <StackPanel DockPanel.Dock="Top">
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="{l:T 'Главная'}"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Home}">
-                            <v:ArtLabel Source="/Assets/ui/btn_home.png" Height="46" Label="Главная" LabelColor="#A3D77E" LabelArea="0.14,0.62,0.72,0.24" />
-                        </RadioButton>
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="{l:T 'Каталог: версии и модлоадеры'}"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Catalog}">
-                            <v:ArtLabel Source="/Assets/ui/btn_catalog.png" Height="44" Label="Каталог" LabelColor="#11CFDB" LabelArea="0.19,0.61,0.70,0.25" />
-                        </RadioButton>
-                        <!-- Сборки Modrinth: в атласе нет готовой кнопки — собираем из item_block. -->
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="{l:T 'Сборки с Modrinth'}"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Modpacks}">
-                            <Border Width="94" Height="46" CornerRadius="10" BorderThickness="2" Background="#CC0A1A12">
-                                <Border.BorderBrush>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#22C55E" Offset="0" />
-                                        <GradientStop Color="#06B6D4" Offset="1" />
-                                    </LinearGradientBrush>
-                                </Border.BorderBrush>
-                                <StackPanel VerticalAlignment="Center">
-                                    <Image Source="/Assets/ui/item_block.png" Height="18" />
-                                    <TextBlock Text="{l:T 'Сборки'}" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" Foreground="#A7F3D0" />
-                                </StackPanel>
-                            </Border>
-                        </RadioButton>
-                        <!-- Серверы -->
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="{l:T 'Серверы: онлайн и быстрый вход'}"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Servers}">
-                            <Border Width="94" Height="46" CornerRadius="10" BorderThickness="2" Background="#CC0A1220">
-                                <Border.BorderBrush>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#06B6D4" Offset="0" />
-                                        <GradientStop Color="#3B82F6" Offset="1" />
-                                    </LinearGradientBrush>
-                                </Border.BorderBrush>
-                                <StackPanel VerticalAlignment="Center">
-                                    <Image Source="/Assets/ui/biome_icon.png" Height="18" />
-                                    <TextBlock Text="{l:T 'Серверы'}" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" Foreground="#A5F3FC" />
-                                </StackPanel>
-                            </Border>
-                        </RadioButton>
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="Java"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Java}">
-                            <Image Source="/Assets/ui/btn_java.png" Height="44" />
-                        </RadioButton>
-
-                        <!-- 👑 Подписка: в атласе нет готовой кнопки — собираем из frog_king. -->
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="{l:T 'Подписка'}"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Subscription}">
-                            <Border Width="94" Height="46" CornerRadius="10" BorderThickness="2" Background="#CC1A1305">
-                                <Border.BorderBrush>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#F59E0B" Offset="0" />
-                                        <GradientStop Color="#8B5CF6" Offset="1" />
-                                    </LinearGradientBrush>
-                                </Border.BorderBrush>
-                                <StackPanel VerticalAlignment="Center">
-                                    <Image Source="/Assets/ui/frog_king.png" Height="20" />
-                                    <TextBlock Text="{l:T 'Подписка'}" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center" Foreground="#FDE68A" />
-                                </StackPanel>
-                            </Border>
-                        </RadioButton>
-
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="{l:T 'Профиль и аккаунты'}"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Profile}">
-                            <v:ArtLabel Source="/Assets/ui/btn_profile.png" Height="44" Label="Профиль" LabelColor="#C8BCD8" LabelArea="0.19,0.60,0.69,0.26" />
-                        </RadioButton>
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="{l:T 'Настройки'}"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Settings}">
-                            <v:ArtLabel Source="/Assets/ui/btn_settings.png" Height="44" Label="Настройки" LabelColor="#A2D377" LabelArea="0.18,0.61,0.70,0.25" />
-                        </RadioButton>
-                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" ToolTip="{l:T 'Помощь и о лаунчере'}"
-                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Help}">
-                            <v:ArtLabel Source="/Assets/ui/btn_help.png" Height="44" Label="Помощь" LabelColor="#A3C0D2" LabelArea="0.18,0.64,0.70,0.23" />
-                        </RadioButton>
-                    </StackPanel>
-
-                    <Button DockPanel.Dock="Bottom" Style="{StaticResource ImageButton}" Command="{Binding ExitCommand}" ToolTip="{l:T 'Выход'}"
-                            HorizontalAlignment="Center">
-                        <v:ArtLabel Source="/Assets/ui/btn_exit.png" Height="42" Label="Выход" LabelColor="#E769A3" LabelArea="0.21,0.63,0.68,0.24" />
+                    <Button DockPanel.Dock="Bottom" Style="{StaticResource DangerButton}" Command="{Binding ExitCommand}" ToolTip="{l:T 'Выход'}"
+                            HorizontalAlignment="Stretch" Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <v:PixelIcon Kind="exit" Width="16" Height="16" Foreground="#FCA5A5" Margin="0,0,6,0" />
+                            <TextBlock Text="{l:T 'Выход'}" Foreground="#FCA5A5" FontFamily="{StaticResource PixelFont}" FontSize="15"
+                                       TextOptions.TextRenderingMode="Aliased" VerticalAlignment="Center" />
+                        </StackPanel>
                     </Button>
+
+                    <!-- Пункты меню: пиксельная иконка (Tag — вид v:PixelIcon) и подпись — стиль NavItem в Themes/Pixel.xaml. -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="home" Content="{l:T 'Главная'}" ToolTip="{l:T 'Главная'}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Home}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="catalog" Content="{l:T 'Каталог'}" ToolTip="{l:T 'Каталог: версии и модлоадеры'}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Catalog}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="mods" Content="{l:T 'Моды'}" ToolTip="{l:T 'Моды, сборки, ресурспаки, шейдеры и датапаки с Modrinth'}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Modpacks}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="servers" Content="{l:T 'Серверы'}" ToolTip="{l:T 'Серверы: онлайн и быстрый вход'}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Servers}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="java" Content="Java" ToolTip="Java"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Java}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="skin" Content="{l:T 'Скины'}" ToolTip="{l:T 'Скины: добавить и надеть в один клик'}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Skins}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="crown" Content="{l:T 'Подписка'}" ToolTip="{l:T 'Подписка'}" Foreground="#FDE68A"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Subscription}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="profile" Content="{l:T 'Профиль'}" ToolTip="{l:T 'Профиль и аккаунты'}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Profile}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="settings" Content="{l:T 'Настройки'}" ToolTip="{l:T 'Настройки'}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Settings}" />
+                        <RadioButton Style="{StaticResource NavItem}" GroupName="nav" Tag="help" Content="{l:T 'Помощь'}" ToolTip="{l:T 'Помощь и о лаунчере'}"
+                                     IsChecked="{Binding SelectedPage, Converter={StaticResource EnumEq}, ConverterParameter=Help}" />
+                    </StackPanel>
+                    </ScrollViewer>
+
+
                 </DockPanel>
             </Border>
 
@@ -148,14 +103,17 @@
 
                 <!-- Заголовок окна: ник + бейдж ADMIN + тир, кнопки окна. -->
                 <DockPanel Grid.Row="0" Margin="18,0,8,0">
-                    <Grid DockPanel.Dock="Right" Width="124" Height="38" WindowChrome.IsHitTestVisibleInChrome="True">
-                        <Image Source="/Assets/ui/window_controls.png" RenderOptions.BitmapScalingMode="HighQuality" />
-                        <UniformGrid Columns="3">
-                            <Button Opacity="0" Cursor="Hand" ToolTip="{l:T 'Свернуть'}" Click="Minimize_Click" />
-                            <Button Opacity="0" Cursor="Hand" ToolTip="{l:T 'Развернуть'}" Click="Maximize_Click" />
-                            <Button Opacity="0" Cursor="Hand" ToolTip="{l:T 'Закрыть'}" Click="Close_Click" />
-                        </UniformGrid>
-                    </Grid>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Style="{StaticResource GhostButton}" Padding="9,5" Margin="0,0,6,0" ToolTip="{l:T 'Свернуть'}" Click="Minimize_Click">
+                            <v:PixelIcon Kind="min" Width="12" Height="12" />
+                        </Button>
+                        <Button Style="{StaticResource GhostButton}" Padding="9,5" Margin="0,0,6,0" ToolTip="{l:T 'Развернуть'}" Click="Maximize_Click">
+                            <v:PixelIcon Kind="max" Width="12" Height="12" />
+                        </Button>
+                        <Button Style="{StaticResource DangerButton}" Padding="9,5" ToolTip="{l:T 'Закрыть'}" Click="Close_Click">
+                            <v:PixelIcon Kind="close" Width="12" Height="12" Foreground="#FCA5A5" />
+                        </Button>
+                    </StackPanel>
 
                     <!-- Командная палитра: та же, что по Ctrl+K. -->
                     <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Margin="0,0,12,0" Padding="12,5" VerticalAlignment="Center"
@@ -174,16 +132,16 @@
                                 Visibility="{Binding IsAdmin, Converter={StaticResource VisibleIf}}">
                             <TextBlock Text="ADMIN" FontWeight="Black" FontSize="11" Foreground="White" />
                         </Border>
-                        <Border Margin="10,0,0,0" CornerRadius="6" Padding="8,2" Background="#22FFFFFF" VerticalAlignment="Center"
+                        <v:PixelBorder Margin="10,0,0,0" CornerRadius="6" Padding="8,2" Background="#22FFFFFF" VerticalAlignment="Center"
                                 Visibility="{Binding IsAdmin, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
                             <TextBlock Text="{Binding TierName}" FontSize="11" Foreground="{DynamicResource MutedBrush}" />
-                        </Border>
+                        </v:PixelBorder>
                     </StackPanel>
                 </DockPanel>
 
                 <!-- Баннеры статуса подписки (не блокируют игру). -->
                 <StackPanel Grid.Row="1" Margin="18,0,18,6">
-                    <Border CornerRadius="10" Padding="14,8" Margin="0,0,0,6" Background="#2222C55E" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
+                    <v:PixelBorder CornerRadius="10" Padding="14,8" Margin="0,0,0,6" Background="#2222C55E" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1"
                             Visibility="{Binding UpdateBanner, Converter={StaticResource VisibleIf}}">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -195,8 +153,8 @@
                                 <TextBlock Text="{Binding UpdateBanner}" VerticalAlignment="Center" FontWeight="SemiBold" />
                             </StackPanel>
                         </DockPanel>
-                    </Border>
-                    <Border CornerRadius="10" Padding="14,8" Margin="0,0,0,6" Background="#33F59E0B" BorderBrush="{DynamicResource WarnBrush}" BorderThickness="1"
+                    </v:PixelBorder>
+                    <v:PixelBorder CornerRadius="10" Padding="14,8" Margin="0,0,0,6" Background="#33F59E0B" BorderBrush="{DynamicResource WarnBrush}" BorderThickness="1"
                             Visibility="{Binding GraceBanner, Converter={StaticResource VisibleIf}}">
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T 'Продлить'}"
@@ -206,14 +164,14 @@
                                 <TextBlock Text="{Binding GraceBanner}" VerticalAlignment="Center" FontWeight="SemiBold" />
                             </StackPanel>
                         </DockPanel>
-                    </Border>
-                    <Border CornerRadius="10" Padding="14,6" Background="#223B82F6" BorderBrush="#3B82F6" BorderThickness="1"
+                    </v:PixelBorder>
+                    <v:PixelBorder CornerRadius="10" Padding="14,6" Background="#223B82F6" BorderBrush="#3B82F6" BorderThickness="1"
                             Visibility="{Binding VerificationFailed, Converter={StaticResource VisibleIf}}">
                         <StackPanel Orientation="Horizontal">
-                            <Image Source="/Assets/installer/icon_info.png" Height="20" Margin="0,0,10,0" />
+                            <v:PixelIcon Kind="info" Foreground="#60A5FA" Width="18" Height="18" Margin="0,0,10,0" VerticalAlignment="Center" />
                             <TextBlock Text="{l:T 'Не удалось проверить подписку — работаем по сохранённым данным (до 7 дней).'}" VerticalAlignment="Center" />
                         </StackPanel>
-                    </Border>
+                    </v:PixelBorder>
                 </StackPanel>
 
                 <ContentControl Grid.Row="2" Content="{Binding CurrentPage}" Margin="18,0,18,18" Focusable="False" />
@@ -240,7 +198,7 @@
         <!-- Командная палитра (Ctrl+K) -->
         <Grid DataContext="{Binding Palette}" Visibility="{Binding IsOpen, Converter={StaticResource VisibleIf}}">
             <Rectangle Fill="#99070B14" MouseDown="PaletteBackdrop_MouseDown" />
-            <Border Width="640" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,70,0,0" Style="{StaticResource Card}" Padding="12">
+            <v:PixelBorder Width="640" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,70,0,0" Style="{StaticResource Card}" Padding="12">
                 <StackPanel>
                     <Grid>
                         <TextBox x:Name="PaletteBox" Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}" FontSize="16" Padding="34,9,10,9"
@@ -255,9 +213,9 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <DockPanel Margin="4,3">
-                                    <Border DockPanel.Dock="Right" CornerRadius="6" Padding="7,1" Background="#18FFFFFF" VerticalAlignment="Center">
+                                    <v:PixelBorder DockPanel.Dock="Right" CornerRadius="6" Padding="7,1" Background="#18FFFFFF" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding CategoryText}" FontSize="11" Foreground="{DynamicResource MutedBrush}" />
-                                    </Border>
+                                    </v:PixelBorder>
                                     <TextBlock DockPanel.Dock="Left" Text="{Binding Icon}" Width="28" FontSize="15" VerticalAlignment="Center" />
                                     <StackPanel VerticalAlignment="Center">
                                         <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
@@ -274,13 +232,13 @@
                         <TextBlock Text="{l:T '↑↓ — выбор · Enter — выполнить · Esc — закрыть'}" FontSize="11" Style="{StaticResource Muted}" />
                     </DockPanel>
                 </StackPanel>
-            </Border>
+            </v:PixelBorder>
         </Grid>
 
         <!-- Онбординг первого запуска -->
         <Grid DataContext="{Binding Onboarding}" Visibility="{Binding IsVisible, Converter={StaticResource VisibleIf}}">
             <Rectangle Fill="#E6070B14" />
-            <Border Width="660" MinHeight="440" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource Card}" Padding="28,22">
+            <v:PixelBorder Width="660" MinHeight="440" VerticalAlignment="Center" HorizontalAlignment="Center" Style="{StaticResource Card}" Padding="28,22">
                 <DockPanel>
                     <DockPanel DockPanel.Dock="Top">
                         <Button DockPanel.Dock="Right" Style="{StaticResource LinkButton}" Content="{l:T 'Пропустить'}" Command="{Binding SkipCommand}" />
@@ -288,9 +246,12 @@
                     </DockPanel>
 
                     <DockPanel DockPanel.Dock="Bottom" Margin="0,18,0,0">
-                        <Button DockPanel.Dock="Left" Style="{StaticResource ImageButton}" Command="{Binding BackCommand}"
+                        <Button DockPanel.Dock="Left" Style="{StaticResource GhostButton}" Command="{Binding BackCommand}" Padding="18,9"
                                 Visibility="{Binding CanBack, Converter={StaticResource VisibleIf}}">
-                            <Image Source="/Assets/ui/btn_back.png" Height="46" />
+                            <StackPanel Orientation="Horizontal">
+                                <v:PixelIcon Kind="back" Width="16" Height="16" Margin="0,0,8,0" />
+                                <TextBlock Text="{l:T 'Назад'}" FontFamily="{StaticResource PixelFont}" FontSize="15" TextOptions.TextRenderingMode="Aliased" />
+                            </StackPanel>
                         </Button>
                         <Button DockPanel.Dock="Right" HorizontalAlignment="Right" Style="{StaticResource AccentButton}" Content="{Binding NextText}"
                                 Command="{Binding NextCommand}" FontSize="16" Padding="26,11" IsDefault="True" />
@@ -332,7 +293,7 @@
                                             <Setter Property="Content">
                                                 <Setter.Value>
                                                     <StackPanel VerticalAlignment="Center">
-                                                        <Image Source="/Assets/main/btn_settings.png" Height="90" />
+                                                        <ContentControl Style="{StaticResource IconTile}" Tag="settings" Foreground="#22D3EE" Width="96" Height="96" FontSize="58" Margin="0" HorizontalAlignment="Center" />
                                                         <TextBlock Text="{l:T 'Сколько памяти дать игре?'}" Style="{StaticResource H1}" HorizontalAlignment="Center" Margin="0,12,0,0" />
                                                         <TextBlock Text="{Binding RamHint}" Style="{StaticResource Muted}" HorizontalAlignment="Center" />
                                                         <TextBlock Text="{Binding RamText}" FontSize="34" FontWeight="Black" HorizontalAlignment="Center" Margin="0,14,0,0"
@@ -349,7 +310,7 @@
                                             <Setter Property="Content">
                                                 <Setter.Value>
                                                     <StackPanel VerticalAlignment="Center">
-                                                        <Image Source="/Assets/main/icon_version.png" Height="90" />
+                                                        <ContentControl Style="{StaticResource IconTile}" Tag="catalog" Foreground="#22D3EE" Width="96" Height="96" FontSize="58" Margin="0" HorizontalAlignment="Center" />
                                                         <TextBlock Style="{StaticResource H1}" HorizontalAlignment="Center" Margin="0,10,0,0">
                                                             <Run Text="{l:T 'Ставим Minecraft '}" /><Run Text="{Binding LatestVersion, Mode=OneWay}" />
                                                         </TextBlock>
@@ -378,7 +339,7 @@
                         </ContentControl>
                     </Grid>
                 </DockPanel>
-            </Border>
+            </v:PixelBorder>
         </Grid>
 
         <!-- Тосты. -->
@@ -386,7 +347,7 @@
                       IsHitTestVisible="False">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border Style="{StaticResource Card}" Padding="12,10" Margin="0,8,0,0" MaxWidth="420" Background="#F2111A2E">
+                    <v:PixelBorder Style="{StaticResource Card}" Padding="12,10" Margin="0,8,0,0" MaxWidth="420" Background="#F2111A2E">
                         <Border.RenderTransform><TranslateTransform /></Border.RenderTransform>
                         <Border.Triggers>
                             <EventTrigger RoutedEvent="Loaded">
@@ -404,7 +365,7 @@
                             <Image Source="{Binding Icon}" Height="34" Margin="0,0,10,0" />
                             <TextBlock Text="{Binding Message}" TextWrapping="Wrap" MaxWidth="340" VerticalAlignment="Center" FontSize="14" />
                         </StackPanel>
-                    </Border>
+                    </v:PixelBorder>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>

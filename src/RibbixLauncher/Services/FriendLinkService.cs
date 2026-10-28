@@ -72,6 +72,14 @@ public sealed partial class FriendLinkService(IHttpClientFactory httpFactory, Do
         return new FriendLink("ribbix://play?" + query, web, included.Count, missing);
     }
 
+    /// <summary>Секрет для кнопки «Присоединиться» в Discord (≤ 128 символов): версия, загрузчик и сервер, без модов.</summary>
+    public static string JoinSecret(Instance inst, string server)
+    {
+        var q = Query(new FriendInvite(inst.Name.Length > 24 ? inst.Name[..24] : inst.Name, inst.GameVersion, inst.Loader, inst.LoaderVersion, server,
+            Array.Empty<(string, string)>()));
+        return q.Length <= 128 ? q : Query(new FriendInvite("Ribbix", inst.GameVersion, inst.Loader, inst.LoaderVersion, server, Array.Empty<(string, string)>()));
+    }
+
     internal static string Query(FriendInvite i)
     {
         var parts = new List<string>

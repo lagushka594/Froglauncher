@@ -1,0 +1,119 @@
+<Grid xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:v="clr-namespace:RibbixLauncher.Views;assembly=RibbixLauncher"
+      Background="#0B1220">
+    <Grid.Resources>
+        <!-- Состояния нарисованы вручную теми же элементами, что и в шаблонах (наведение и нажатие не снять статичной картинкой). -->
+        <DropShadowEffect x:Key="Glow" Color="#22C55E" BlurRadius="16" ShadowDepth="0" Opacity="0.85" />
+        <Style x:Key="Lbl" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#93A3B8" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+        <Style x:Key="T" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{StaticResource PixelFont}" />
+            <Setter Property="Foreground" Value="#E7F8EC" />
+            <Setter Property="FontSize" Value="15" />
+            <Setter Property="TextOptions.TextRenderingMode" Value="Aliased" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+    </Grid.Resources>
+    <StackPanel Margin="30,24">
+        <TextBlock Text="Кнопки" Style="{StaticResource H1}" Margin="0,0,0,18" />
+        <UniformGrid Columns="4" Rows="2">
+            <StackPanel Margin="10">
+                <v:PixelBorder Background="{DynamicResource AccentGradient}" BorderBrush="{StaticResource InkBrush}" BorderThickness="2" Step="3" Depth="4" Padding="18,7" HorizontalAlignment="Center">
+                    <TextBlock Text="Установить" Style="{StaticResource T}" Foreground="#06210F" Margin="0,0,0,4" />
+                </v:PixelBorder>
+                <TextBlock Text="обычная" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="10">
+                <v:PixelBorder Background="{DynamicResource AccentGradient}" BorderBrush="{StaticResource InkBrush}" BorderThickness="2" Step="3" Depth="4" Padding="18,7" HorizontalAlignment="Center" Effect="{StaticResource Glow}">
+                    <TextBlock Text="Установить" Style="{StaticResource T}" Foreground="#06210F" Margin="0,0,0,4" />
+                </v:PixelBorder>
+                <TextBlock Text="наведение — неоновое свечение" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="10">
+                <v:PixelBorder Background="{DynamicResource AccentGradient}" BorderBrush="{StaticResource InkBrush}" BorderThickness="2" Step="3" Depth="0" Margin="0,4,0,0" Padding="18,7" HorizontalAlignment="Center">
+                    <TextBlock Text="Установить" Style="{StaticResource T}" Foreground="#06210F" Margin="0,0,0,4" />
+                </v:PixelBorder>
+                <TextBlock Text="нажатие — опускается на 4 px" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="10">
+                <v:PixelBorder Background="{DynamicResource AccentGradient}" BorderBrush="{StaticResource InkBrush}" BorderThickness="2" Step="3" Depth="4" Padding="18,7" HorizontalAlignment="Center" Opacity="0.4">
+                    <TextBlock Text="Установить" Style="{StaticResource T}" Foreground="#06210F" Margin="0,0,0,4" />
+                </v:PixelBorder>
+                <TextBlock Text="недоступна" Style="{StaticResource Lbl}" />
+            </StackPanel>
+
+            <StackPanel Margin="10">
+                <v:PixelBorder Background="{StaticResource PlateBrush}" BorderBrush="{StaticResource NeonFrame}" BorderThickness="2" Step="3" Depth="4" Padding="14,6" HorizontalAlignment="Center">
+                    <TextBlock Text="📂 Папка" Style="{StaticResource T}" Margin="0,0,0,4" />
+                </v:PixelBorder>
+                <TextBlock Text="второстепенная" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="10">
+                <v:PixelBorder Background="{StaticResource PlateBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="2" Step="3" Depth="4" Padding="14,6" HorizontalAlignment="Center" Effect="{StaticResource Glow}">
+                    <TextBlock Text="📂 Папка" Style="{StaticResource T}" Margin="0,0,0,4" />
+                </v:PixelBorder>
+                <TextBlock Text="наведение — рамка акцентом" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="10">
+                <v:PixelBorder Background="{StaticResource PlateBrush}" BorderBrush="{DynamicResource DangerBrush}" BorderThickness="2" Step="3" Depth="4" Padding="14,6" HorizontalAlignment="Center">
+                    <TextBlock Text="Удалить" Style="{StaticResource T}" Foreground="#FCA5A5" Margin="0,0,0,4" />
+                </v:PixelBorder>
+                <TextBlock Text="опасная" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="10">
+                <v:PixelBorder Background="#CC050B1C" BorderBrush="{StaticResource NeonFrameSoft}" BorderThickness="2" Step="3" Padding="10,7" Bevel="False" Width="190" HorizontalAlignment="Center">
+                    <TextBlock Text="Ник или email" Foreground="#93A3B8" FontSize="14" />
+                </v:PixelBorder>
+                <TextBlock Text="поле ввода" Style="{StaticResource Lbl}" />
+            </StackPanel>
+        </UniformGrid>
+
+        <TextBlock Text="Меню и «Играть»" Style="{StaticResource H1}" Margin="0,22,0,14" />
+        <StackPanel Orientation="Horizontal">
+            <StackPanel Margin="10,0">
+                <RadioButton Style="{StaticResource NavItem}" Tag="catalog" Content="Каталог" Width="104" />
+                <TextBlock Text="пункт меню" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="10,0">
+                <RadioButton Style="{StaticResource NavItem}" Tag="home" Content="Главная" Width="104" IsChecked="True" />
+                <TextBlock Text="выбранный" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="10,0">
+                <RadioButton Style="{StaticResource NavItem}" Tag="crown" Content="Подписка" Width="104" Foreground="#FDE68A" />
+                <TextBlock Text="подписка — золотом" Style="{StaticResource Lbl}" />
+            </StackPanel>
+            <StackPanel Margin="40,0,10,0" VerticalAlignment="Top">
+                <Button Style="{StaticResource PlayButton}">
+                    <StackPanel Orientation="Horizontal">
+                        <v:PixelIcon Kind="play" Width="26" Height="26" Foreground="#06210F" Margin="0,0,12,0" />
+                        <TextBlock Text="ИГРАТЬ" Foreground="#06210F" FontFamily="{StaticResource TitleFont}" FontSize="24" TextOptions.TextRenderingMode="Aliased" />
+                    </StackPanel>
+                </Button>
+                <TextBlock Text="главная кнопка" Style="{StaticResource Lbl}" />
+            </StackPanel>
+        </StackPanel>
+
+        <TextBlock Text="Иконки" Style="{StaticResource H1}" Margin="0,22,0,14" />
+        <StackPanel Orientation="Horizontal">
+            <v:PixelIcon Kind="home" Width="32" Height="32" Foreground="#22C55E" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="catalog" Width="32" Height="32" Foreground="#22D3EE" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="modpack" Width="32" Height="32" Foreground="#A78BFA" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="servers" Width="32" Height="32" Foreground="#38BDF8" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="java" Width="32" Height="32" Foreground="#F97316" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="crown" Width="32" Height="32" Foreground="#FACC15" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="profile" Width="32" Height="32" Foreground="#E7F8EC" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="settings" Width="32" Height="32" Foreground="#93A3B8" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="help" Width="32" Height="32" Foreground="#22D3EE" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="folder" Width="32" Height="32" Foreground="#FACC15" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="stats" Width="32" Height="32" Foreground="#22C55E" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="back" Width="32" Height="32" Foreground="#E7F8EC" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="exit" Width="32" Height="32" Foreground="#F87171" Margin="0,0,16,0" />
+            <v:PixelIcon Kind="play" Width="32" Height="32" Foreground="#22C55E" />
+        </StackPanel>
+    </StackPanel>
+</Grid>

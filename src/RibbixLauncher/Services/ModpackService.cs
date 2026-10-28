@@ -54,9 +54,11 @@ public sealed class ModpackService(
 
     private HttpClient Http => httpFactory.CreateClient(DownloadService.HttpClientName);
 
-    public async Task<IReadOnlyList<ModpackHit>> SearchAsync(string? query, LoaderType? loader, string? gameVersion, int offset, CancellationToken ct)
+    /// <summary>Поиск на Modrinth: projectType — modpack, mod, resourcepack, shader или datapack.</summary>
+    public async Task<IReadOnlyList<ModpackHit>> SearchAsync(string? query, LoaderType? loader, string? gameVersion, int offset, CancellationToken ct,
+        string projectType = "modpack")
     {
-        var facets = new List<string> { "[\"project_type:modpack\"]" };
+        var facets = new List<string> { $"[\"project_type:{projectType}\"]" };
         if (loader is { } l && ModrinthService.Loaders(l) is { Length: > 0 } names)
             facets.Add("[" + string.Join(",", names.Take(1).Select(n => $"\"categories:{n}\"")) + "]");
         if (!string.IsNullOrWhiteSpace(gameVersion)) facets.Add($"[\"versions:{gameVersion}\"]");

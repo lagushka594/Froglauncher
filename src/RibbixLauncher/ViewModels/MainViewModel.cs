@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace RibbixLauncher.ViewModels;
 
-public enum Page { Home, Catalog, Modpacks, Servers, Java, Settings, Profile, Subscription, Help }
+public enum Page { Home, Catalog, Modpacks, Servers, Java, Settings, Profile, Subscription, Help, Skins }
 
 /// <summary>Сообщение «перейти на страницу» (например, из апселл-баннера).</summary>
 public sealed record NavigateMessage(Page Page);
@@ -55,7 +55,7 @@ public partial class MainViewModel : ObservableObject, IRecipient<NavigateMessag
 
     public MainViewModel(
         HomeViewModel home, InstancesViewModel catalog, ModpacksViewModel modpacks, ServersViewModel servers, JavaViewModel java, SettingsViewModel settingsVm,
-        ProfileViewModel profile, SubscriptionViewModel subscription, AboutViewModel about,
+        ProfileViewModel profile, SubscriptionViewModel subscription, AboutViewModel about, SkinsViewModel skins,
         EntitlementService entitlements, SessionStore session, GameAuthService accounts, ThemeService themes,
         SettingsService settings, DiscordPresenceService presence, ToastService toasts, UpdateService updates,
         OnboardingViewModel onboarding, TrayService tray, InstanceService instanceStore, VersionService versions,
@@ -87,7 +87,7 @@ public partial class MainViewModel : ObservableObject, IRecipient<NavigateMessag
         _pages = new()
         {
             [Page.Home] = home, [Page.Catalog] = catalog, [Page.Modpacks] = modpacks, [Page.Servers] = servers, [Page.Java] = java, [Page.Settings] = settingsVm,
-            [Page.Profile] = profile, [Page.Subscription] = subscription, [Page.Help] = about,
+            [Page.Profile] = profile, [Page.Subscription] = subscription, [Page.Help] = about, [Page.Skins] = skins,
         };
         _currentPage = home;
 

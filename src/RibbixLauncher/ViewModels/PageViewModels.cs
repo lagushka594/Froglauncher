@@ -30,8 +30,17 @@ public partial class InstancesViewModel(
     PlayStatsService playStats,
     FpsBenchmarkService bench,
     GameAuthService accounts,
+    Lazy<ModpacksViewModel> catalog,
     ILogger<InstancesViewModel> log) : ObservableObject, IPageActivated, IRefreshable
 {
+    /// <summary>Каталог Modrinth сразу для этой версии: моды, ресурспаки, шейдеры, датапаки.</summary>
+    [RelayCommand]
+    private void OpenModrinth(string? type)
+    {
+        catalog.Value.Show(type ?? "mod", Selected);
+        WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Modpacks));
+    }
+
     // ---------- Обновление модов со снимком и откатом ----------
     public ObservableCollection<ModUpdate> ModUpdates { get; } = new();
     public ProgressState ModUpdateProgress { get; } = new();
@@ -1029,6 +1038,15 @@ public partial class AboutViewModel(IOptions<LauncherOptions> options, Onboardin
 
     [RelayCommand]
     private void OpenGitHub() => Shell.Open(GitHubUrl);
+
+    [RelayCommand]
+    private void OpenDiscord() => Shell.Open(options.Value.DiscordUrl);
+
+    [RelayCommand]
+    private void OpenTikTok() => Shell.Open(options.Value.TikTokUrl);
+
+    [RelayCommand]
+    private void OpenYouTube() => Shell.Open(options.Value.YouTubeUrl);
 
     [RelayCommand]
     private static void OpenLogs() => Shell.Open(LauncherPaths.Logs);

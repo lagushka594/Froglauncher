@@ -152,9 +152,12 @@ public partial class App : Application
         s.AddSingleton<HomeViewModel>();
         s.AddSingleton<InstancesViewModel>();
         s.AddSingleton<ModpacksViewModel>();
+        s.AddSingleton(sp => new Lazy<ModpacksViewModel>(sp.GetRequiredService<ModpacksViewModel>));
         s.AddSingleton<ServersViewModel>();
         s.AddSingleton<OnboardingViewModel>();
         s.AddSingleton<JavaViewModel>();
+        s.AddSingleton<SkinsViewModel>();
+        s.AddSingleton<SkinService>();
         s.AddSingleton<SettingsViewModel>();
         s.AddSingleton<ProfileViewModel>();
         s.AddSingleton<StatsViewModel>();
