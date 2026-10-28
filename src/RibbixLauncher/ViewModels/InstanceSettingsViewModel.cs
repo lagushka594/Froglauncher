@@ -116,6 +116,7 @@ public partial class InstanceSettingsViewModel : ObservableObject
                 new Progress<string>(s => BenchmarkText = s), _benchCts.Token);
             BenchmarkText = r.Message + "\n" + string.Join("\n", r.Runs.Select(x => L.T($"• {x.Preset.Title}: {x.Average:0} FPS, в худшие моменты {x.Low:0}")));
             if (r.Best is { } best) ApplyPreset(best);
+            QuestService.MarkGlobal("fps");
         }
         catch (OperationCanceledException)
         {

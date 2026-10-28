@@ -69,6 +69,7 @@ public partial class SkinsViewModel(SkinService skins, GameAuthService accounts,
             acc = await accounts.EnsureFreshAsync(acc, CancellationToken.None);
             await skins.ApplyAsync(_lib, item.Entry, acc, CancellationToken.None);
             foreach (var i in Items) i.IsActive = i == item;
+            QuestService.MarkGlobal("skin");
             toasts.Show(acc.Type == AccountType.Microsoft
                 ? L.T($"Скин «{item.Name}» загружен в профиль Minecraft 🐸 В игре он появится сразу (на сервере — после перезахода)")
                 : L.T($"Скин «{item.Name}» надет 🐸 Он включится при следующем запуске игры"), ToastKind.Success, 6);

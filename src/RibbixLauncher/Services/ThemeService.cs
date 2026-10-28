@@ -10,16 +10,20 @@ public sealed record ThemeInfo(string Key, string Name, string Accent, string Ac
     public string RequiresLabel => Requires switch
     {
         null => L.T("Бесплатно"),
-        EntitlementKeys.PremiumThemes3 => "RibbixLite+",
+        EntitlementKeys.PremiumThemes3 => "Ribbix Lite+",
         EntitlementKeys.PremiumThemesAll => "Ribbix+",
         EntitlementKeys.ExclusiveTheme => "Ribbix Legend",
+        { } q when q.StartsWith(ThemeService.QuestPrefix) => L.T($"Уровень заданий {q[ThemeService.QuestPrefix.Length..]}"),
         _ => "",
     };
 }
 
 /// <summary>Темы оформления. Цвета — DynamicResource, меняются на лету без перезапуска.</summary>
-public sealed class ThemeService(EntitlementService entitlements)
+public sealed class ThemeService(EntitlementService entitlements, QuestService quests)
 {
+    /// <summary>Requires вида «quest:5» — тема открывается на этом уровне заданий дня.</summary>
+    public const string QuestPrefix = "quest:";
+
     public static readonly IReadOnlyList<ThemeInfo> Themes = new[]
     {
         new ThemeInfo("swamp", L.T("Болото"), "#22C55E", "#06B6D4", "#0B1220", null),
@@ -29,6 +33,9 @@ public sealed class ThemeService(EntitlementService entitlements)
         new ThemeInfo("sunset", L.T("Закат"), "#F97316", "#F43F5E", "#160C0A", EntitlementKeys.PremiumThemesAll),
         new ThemeInfo("mint", L.T("Мята"), "#2DD4BF", "#A3E635", "#071311", EntitlementKeys.PremiumThemesAll),
         new ThemeInfo("legend", L.T("Легенда"), "#8B5CF6", "#F59E0B", "#0E0718", EntitlementKeys.ExclusiveTheme),
+        // Только за задания дня — купить нельзя.
+        new ThemeInfo("quest-neon", L.T("⚡ Неоновое болото"), "#A3E635", "#E879F9", "#0A0614", QuestPrefix + "5"),
+        new ThemeInfo("quest-king", L.T("👑 Король пруда"), "#FBBF24", "#22D3EE", "#100C02", QuestPrefix + "10"),
         // Сезонные — бесплатные: «Сезонная» сама переключается по дате, остальные можно выбрать вручную.
         new ThemeInfo(Seasons.AutoKey, L.T("🗓 Сезонная (авто)"), "#22C55E", "#F472B6", "#0B1220", null),
         new ThemeInfo("season-spring", L.T("🌸 Цветение"), "#4ADE80", "#F472B6", "#0F1412", null),
@@ -49,6 +56,7 @@ public sealed class ThemeService(EntitlementService entitlements)
     public bool IsUnlocked(ThemeInfo t) => t.Requires switch
     {
         null => true,
+        { } q when q.StartsWith(QuestPrefix) => int.TryParse(q[QuestPrefix.Length..], out var need) && quests.Level >= need,
         EntitlementKeys.PremiumThemes3 => entitlements.IsAllowed(EntitlementKeys.PremiumThemes3) ||
                                           entitlements.IsAllowed(EntitlementKeys.PremiumThemesAll),
         var key => entitlements.IsAllowed(key),

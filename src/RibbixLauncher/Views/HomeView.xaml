@@ -54,6 +54,42 @@
                 <Image Source="/Assets/main/logo.png" Height="200" HorizontalAlignment="Left" Style="{StaticResource Floating}" />
                 <TextBlock Text="{l:T 'Квакнем по-крупному 🐸'}" Style="{StaticResource H2}" Margin="0,12,0,0" />
                 <TextBlock Text="{l:T 'Ванилла, Fabric, Quilt, Forge и NeoForge — в один клик.'}" Style="{StaticResource Muted}" />
+
+                <!-- Задания дня. -->
+                <v:PixelBorder Style="{StaticResource Card}" DataContext="{Binding Quests}" Margin="0,16,0,0" Width="400" HorizontalAlignment="Left" Padding="14,12">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding LevelText}" Style="{StaticResource Muted}" FontSize="12" VerticalAlignment="Center" />
+                            <TextBlock Text="{l:T '📜 Задания дня'}" Style="{StaticResource H2}" />
+                        </DockPanel>
+                        <ProgressBar Value="{Binding LevelPercent, Mode=OneWay}" Maximum="100" Height="8" Margin="0,8,0,8" />
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,3">
+                                        <TextBlock x:Name="R" DockPanel.Dock="Right" Text="{Binding Reward}" Foreground="{DynamicResource AccentBrush}" FontSize="12"
+                                                   FontFamily="{StaticResource PixelFont}" TextOptions.TextRenderingMode="Aliased" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Emoji}" Width="22" VerticalAlignment="Center" />
+                                        <StackPanel>
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding ProgressText}" Style="{StaticResource Muted}" FontSize="11" />
+                                                <TextBlock x:Name="T" Text="{Binding Title}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                            </DockPanel>
+                                            <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="6" Margin="0,3,0,0" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Done}" Value="True">
+                                            <Setter TargetName="T" Property="TextDecorations" Value="Strikethrough" />
+                                            <Setter TargetName="R" Property="Text" Value="✓" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="{Binding NextReward}" Style="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" />
+                    </StackPanel>
+                </v:PixelBorder>
             </StackPanel>
 
             <!-- Новый год: ёлка по дням заходов, подарок дня, плейлист. -->

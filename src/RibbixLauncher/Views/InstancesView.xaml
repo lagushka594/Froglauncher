@@ -793,6 +793,9 @@
                                                                         Command="{Binding DataContext.RestoreCommand, ElementName=WorldsList}" CommandParameter="{Binding}" />
                                                                 <Button Style="{StaticResource GhostButton}" Content="{l:T 'Экспорт .zip'}" Margin="0,0,6,4" Padding="12,5"
                                                                         Command="{Binding DataContext.ExportCommand, ElementName=WorldsList}" CommandParameter="{Binding}" />
+                                                                <Button Style="{StaticResource GhostButton}" Content="{l:T '🗺 Карта'}" Margin="0,0,6,4" Padding="12,5"
+                                                                        ToolTip="{l:T 'Вид сверху на мир: приближение колесом, перемещение — перетаскиванием'}"
+                                                                        Command="{Binding DataContext.OpenMapCommand, ElementName=WorldsList}" CommandParameter="{Binding}" />
                                                                 <Button Style="{StaticResource GhostButton}" Content="{l:T '🎞 Таймлапс'}" Margin="0,0,6,4" Padding="12,5"
                                                                         ToolTip="{l:T 'Вид сверху по каждому бэкапу — «как рос мой мир» для TikTok'}"
                                                                         Command="{Binding DataContext.TimelapseCommand, ElementName=WorldsList}" CommandParameter="{Binding}" />

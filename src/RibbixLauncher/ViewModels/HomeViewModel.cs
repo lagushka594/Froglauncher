@@ -36,6 +36,7 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     private readonly FriendLinkService _friends;
     private readonly SkinService _skins;
     private readonly PreflightService _preflight;
+    public QuestsViewModel Quests { get; }
     private bool _skipPreflight;
 
     /// <summary>
@@ -170,8 +171,9 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         EntitlementService entitlements, DownloadService downloads, SettingsService settings,
         DiscordPresenceService presence, ToastService toasts, PlayStatsService stats, TrayService tray, WorldService worlds,
         CrashDoctorViewModel doctor, ModToolsService modTools, ModBisectService bisect, FriendLinkService friends, SkinService skins,
-        PreflightService preflight, ILogger<HomeViewModel> log)
+        PreflightService preflight, QuestsViewModel quests, ILogger<HomeViewModel> log)
     {
+        Quests = quests;
         _preflight = preflight;
         doctor.LaunchAnywayRequested += () =>
         {
@@ -216,6 +218,7 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     public Task LoadAsync()
     {
         Instances.ReplaceWith(_instances.List());
+        Quests.Refresh();
         if (!_recovered)
         {
             // Лаунчер закрыли посреди поиска виновника — вернуть моды.
@@ -429,6 +432,7 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     {
         if (s.IsDiagnostic) return; // поиск виновника / замер FPS — свои запуски
         IsRunning = false;
+        Quests.Refresh();
         _reminder?.Stop();
         _reminder = null;
         _tray.SetGameRunning(false);

@@ -492,6 +492,18 @@ public partial class WorldsViewModel(Instance inst, WorldService worlds, LaunchS
 
     [ObservableProperty] private string? _timelapseStatus;
 
+    /// <summary>Карта мира — отдельное окно, мир только читается.</summary>
+    [RelayCommand]
+    private void OpenMap(WorldItem? w)
+    {
+        if (w is null) return;
+        QuestService.MarkGlobal("map");
+        new RibbixLauncher.Views.WorldMapWindow(Path.Combine(inst.GameDirectory, "saves", w.Info.Folder), w.Info.Name)
+        {
+            Owner = Application.Current.MainWindow,
+        }.Show();
+    }
+
     /// <summary>Таймлапс из бэкапов: кадр на каждый бэкап + текущий мир. Рисование WPF — в отдельном STA-потоке.</summary>
     [RelayCommand]
     private async Task TimelapseAsync(WorldItem? w)

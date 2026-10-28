@@ -159,6 +159,8 @@ public partial class App : Application
         s.AddSingleton<SkinsViewModel>();
         s.AddSingleton<SkinService>();
         s.AddSingleton<OptimizeService>();
+        s.AddSingleton<QuestService>();
+        s.AddSingleton<QuestsViewModel>();
         s.AddSingleton<PreflightService>();
         s.AddSingleton<SettingsViewModel>();
         s.AddSingleton<ProfileViewModel>();
