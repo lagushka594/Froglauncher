@@ -1,0 +1,40 @@
+# Новые видео YouTube и TikTok → Discord. Каждые 15 минут; состояние — tools/social-notify/state.json.
+# Нужен секрет репозитория DISCORD_WEBHOOK_URL (Settings → Secrets and variables → Actions).
+name: Новые видео в Discord
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: social-notify
+  cancel-in-progress: false
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Проверить видео и отправить в Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python tools/social-notify/notify.py
+
+      - name: Сохранить состояние
+        run: |
+          if [ -n "$(git status --porcelain tools/social-notify/state.json)" ]; then
+            git config user.name "ribbix-bot"
+            git config user.email "ribbix-bot@users.noreply.github.com"
+            git add tools/social-notify/state.json
+            git commit -m "chore: social-notify state [skip ci]"
+            git push
+          fi
