@@ -34,8 +34,6 @@ public sealed class QuestService(PlayStatsService stats, InstanceService instanc
     /// <summary>Для мест вне DI (окно карты, настройки версии): отметить событие задания.</summary>
     public static void MarkGlobal(string kind) => _current?.Mark(kind);
     private static QuestService? _current;
-    private readonly bool _registered = Register();
-    private bool Register() { _current = this; return true; }
     private static string File => Path.Combine(LauncherPaths.Root, "quests.json");
 
     public static readonly IReadOnlyList<QuestDef> Pool = new[]
@@ -57,6 +55,7 @@ public sealed class QuestService(PlayStatsService stats, InstanceService instanc
 
     public QuestState Load()
     {
+        _current = this; // главная вызывает Load при старте — дальше MarkGlobal работает
         try
         {
             if (System.IO.File.Exists(File)) return JsonSerializer.Deserialize<QuestState>(System.IO.File.ReadAllText(File), Json.Options) ?? new QuestState();
