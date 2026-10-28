@@ -31,6 +31,7 @@ public partial class InstancesViewModel(
     FpsBenchmarkService bench,
     GameAuthService accounts,
     Lazy<ModpacksViewModel> catalog,
+    OptimizeService optimizer,
     ILogger<InstancesViewModel> log) : ObservableObject, IPageActivated, IRefreshable
 {
     /// <summary>Каталог Modrinth сразу для этой версии: моды, ресурспаки, шейдеры, датапаки.</summary>
@@ -39,6 +40,41 @@ public partial class InstancesViewModel(
     {
         catalog.Value.Show(type ?? "mod", Selected);
         WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Modpacks));
+    }
+
+    [ObservableProperty] private bool _isOptimizing;
+
+    /// <summary>«🚀 Ускорить»: набор модов оптимизации под загрузчик версии (со снимком для отката).</summary>
+    [RelayCommand]
+    private async Task OptimizeAsync()
+    {
+        if (Selected is not { } inst || IsOptimizing) return;
+        if (launcher.Current is { Process.HasExited: false } run && run.Instance.Id == inst.Id)
+        {
+            toasts.Show(L.T("Закройте игру перед обновлением модов"), ToastKind.Info);
+            return;
+        }
+        IsOptimizing = true;
+        try
+        {
+            var r = await optimizer.RunAsync(inst, new Progress<string>(s => toasts.Show(s, ToastKind.Info, 2)), CancellationToken.None);
+            RefreshModFiles();
+            RefreshSnapshot();
+            var text = r.Installed.Count > 0
+                ? L.T($"🚀 Ускорено! Поставлено: {string.Join(", ", r.Installed)}.")
+                : L.T("Все оптимизации уже стоят 🐸");
+            if (r.Unavailable.Count > 0) text += L.T($" Нет под эту версию: {string.Join(", ", r.Unavailable)}.");
+            if (r.Installed.Count > 0) text += L.T(" Замерьте FPS во вкладке «Графика» — будет видно разницу.");
+            toasts.Show(text, ToastKind.Success, 9);
+        }
+        catch (Exception ex) when (ex is ModsException or System.Net.Http.HttpRequestException or System.IO.IOException or TaskCanceledException)
+        {
+            toasts.Show(ex is ModsException ? ex.Message : L.T("Не удалось скачать мод: ") + ex.Message, ToastKind.Error, 7);
+        }
+        finally
+        {
+            IsOptimizing = false;
+        }
     }
 
     // ---------- Обновление модов со снимком и откатом ----------

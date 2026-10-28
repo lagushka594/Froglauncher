@@ -13,7 +13,8 @@ using Microsoft.Extensions.Logging;
 namespace RibbixLauncher.Services;
 
 /// <summary>Что мод сам о себе пишет: fabric.mod.json, quilt.mod.json или META-INF/(neoforge.)mods.toml.</summary>
-public sealed record ModInfo(string FileName, bool Enabled, IReadOnlyList<string> Ids, string Name, string Version, IReadOnlyList<string> Depends)
+public sealed record ModInfo(string FileName, bool Enabled, IReadOnlyList<string> Ids, string Name, string Version, IReadOnlyList<string> Depends,
+    string? MinecraftRange = null, string Loader = "")
 {
     public string Jar => Enabled ? FileName : FileName[..^ModToolsService.DisabledSuffix.Length];
 }
@@ -70,7 +71,8 @@ public sealed partial class ModToolsService(IHttpClientFactory httpFactory, Down
         {
             using var zip = ZipFile.OpenRead(path);
             var (ids, name, version, deps) = ReadMetadata(zip);
-            return new ModInfo(file, enabled, ids, title ?? name ?? jar, version ?? "", deps);
+            var (range, loader) = ReadMinecraftRange(zip);
+            return new ModInfo(file, enabled, ids, title ?? name ?? jar, version ?? "", deps, range, loader);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or JsonException or UnauthorizedAccessException)
         {
@@ -85,6 +87,8 @@ public sealed partial class ModToolsService(IHttpClientFactory httpFactory, Down
             var ids = new List<string>();
             if (f["id"]?.GetValue<string>() is { } id) ids.Add(id);
             foreach (var p in f["provides"]?.AsArray() ?? new JsonArray()) if (p?.GetValue<string>() is { } pid) ids.Add(pid);
+            // Вложенные jar (META-INF/jars, в т. ч. jar в jar): библиотеки и модули, которые мод приносит с собой, — они тоже «есть».
+            NestedIds(zip, ids, 0);
             var deps = (f["depends"] as JsonObject)?.Select(kv => kv.Key).ToList() ?? new List<string>();
             return (ids, f["name"]?.GetValue<string>(), f["version"]?.GetValue<string>(), deps);
         }
@@ -98,6 +102,60 @@ public sealed partial class ModToolsService(IHttpClientFactory httpFactory, Down
         var toml = zip.GetEntry("META-INF/neoforge.mods.toml") ?? zip.GetEntry("META-INF/mods.toml");
         if (toml is not null) return ParseModsToml(ReadText(toml));
         return (Array.Empty<string>(), null, null, Array.Empty<string>());
+    }
+
+    /// <summary>
+    /// Под какой Minecraft сделан мод (fabric.mod.json → depends.minecraft) и для какого загрузчика (fabric/quilt/forge).
+    /// Диапазоны Forge (mods.toml) не разбираем — Forge сам их проверяет.
+    /// </summary>
+    internal static (string? Range, string Loader) ReadMinecraftRange(ZipArchive zip)
+    {
+        // Мультилоадерные моды несут метаданные сразу для нескольких загрузчиков — перечисляем все через запятую.
+        var loaders = string.Join(",", new[]
+        {
+            zip.GetEntry("fabric.mod.json") is null ? null : "fabric", zip.GetEntry("quilt.mod.json") is null ? null : "quilt",
+            zip.GetEntry("META-INF/mods.toml") is null ? null : "forge", zip.GetEntry("META-INF/neoforge.mods.toml") is null ? null : "neoforge",
+        }.Where(x => x is not null));
+        try
+        {
+            if (zip.GetEntry("fabric.mod.json") is { } fe &&
+                JsonNode.Parse(ReadText(fe), documentOptions: new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip }) is JsonObject f)
+            {
+                var mc = f["depends"]?["minecraft"];
+                var range = mc switch
+                {
+                    JsonValue v when v.TryGetValue<string>(out var str) => str,
+                    JsonArray a => string.Join(" || ", a.Select(x => x?.GetValue<string>()).Where(x => x is not null)),
+                    _ => null,
+                };
+                return (range, loaders);
+            }
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException) { }
+        return (null, loaders);
+    }
+
+    private static void NestedIds(ZipArchive zip, List<string> ids, int depth)
+    {
+        if (depth > 3) return;
+        foreach (var nested in zip.Entries.Where(e => e.FullName.StartsWith("META-INF/jars/", StringComparison.Ordinal) && e.FullName.EndsWith(".jar")))
+        {
+            try
+            {
+                using var ms = new MemoryStream();
+                using (var s = nested.Open()) s.CopyTo(ms);
+                ms.Position = 0;
+                using var inner = new ZipArchive(ms);
+                if (inner.GetEntry("fabric.mod.json") is { } ie && JsonNode.Parse(ReadText(ie),
+                        documentOptions: new JsonDocumentOptions { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip }) is JsonObject f)
+                {
+                    if (f["id"]?.GetValue<string>() is { } nid) ids.Add(nid);
+                    foreach (var p in f["provides"]?.AsArray() ?? new JsonArray()) if (p?.GetValue<string>() is { } pid) ids.Add(pid);
+                }
+                NestedIds(inner, ids, depth + 1);
+            }
+            catch (Exception ex) when (ex is InvalidDataException or JsonException or InvalidOperationException or IOException) { }
+        }
     }
 
     /// <summary>Нам нужны только modId, displayName, version и зависимости — полноценный TOML-парсер не нужен.</summary>

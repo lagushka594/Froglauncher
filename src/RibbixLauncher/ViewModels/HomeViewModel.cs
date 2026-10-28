@@ -35,6 +35,8 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     private readonly ModBisectService _bisect;
     private readonly FriendLinkService _friends;
     private readonly SkinService _skins;
+    private readonly PreflightService _preflight;
+    private bool _skipPreflight;
 
     /// <summary>
     /// Ссылка «Играть с другом»: подтверждение (ссылка пришла извне) → поставить версию с модами → играть
@@ -168,8 +170,14 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         EntitlementService entitlements, DownloadService downloads, SettingsService settings,
         DiscordPresenceService presence, ToastService toasts, PlayStatsService stats, TrayService tray, WorldService worlds,
         CrashDoctorViewModel doctor, ModToolsService modTools, ModBisectService bisect, FriendLinkService friends, SkinService skins,
-        ILogger<HomeViewModel> log)
+        PreflightService preflight, ILogger<HomeViewModel> log)
     {
+        _preflight = preflight;
+        doctor.LaunchAnywayRequested += () =>
+        {
+            _skipPreflight = true;
+            if (PlayCommand.CanExecute(null)) PlayCommand.Execute(null);
+        };
         _skins = skins;
         _friends = friends;
         // Друг нажал «Присоединиться» в нашем статусе Discord.
@@ -274,6 +282,20 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
             WeakReferenceMessenger.Default.Send(new NavigateMessage(Page.Profile));
             return;
         }
+
+        // Проверка перед запуском: нашлись проблемы — показываем их вместо запуска (кнопки починки и «Играть всё равно»).
+        if (!_skipPreflight)
+        {
+            var found = await Task.Run(() => _preflight.Check(inst, HardwareService.MaxSafeRamMb(HardwareService.Scan())));
+            if (found.Count > 0)
+            {
+                Crash = new CrashInfo(0, Array.Empty<string>(), null);
+                Doctor.ShowPreflight(inst, found);
+                Mascot = "/Assets/ui/frog_surprise.png";
+                return;
+            }
+        }
+        _skipPreflight = false;
 
         var server = _pendingServer;
         _pendingServer = null;

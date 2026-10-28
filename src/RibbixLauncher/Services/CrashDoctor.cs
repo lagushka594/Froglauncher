@@ -5,7 +5,7 @@ using RibbixLauncher.Models;
 
 namespace RibbixLauncher.Services;
 
-public enum FixKind { InstallMod, UpdateMod, DisableMod, Java, Ram, Rollback, Bisect, Drivers }
+public enum FixKind { InstallMod, UpdateMod, DisableMod, Java, Ram, Rollback, Bisect, Drivers, LaunchAnyway }
 
 /// <summary>Кнопка починки. Arg — modId, мажорная версия Java или мегабайты памяти.</summary>
 public sealed record CrashFix(FixKind Kind, string Label, string? Arg = null);

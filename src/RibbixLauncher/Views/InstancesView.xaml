@@ -147,6 +147,10 @@
                 <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Style="{StaticResource AccentButton}" Content="{l:T 'Сохранить'}" Command="{Binding SaveCommand}" Margin="0,0,8,0" />
+                        <Button Style="{StaticResource AccentButton}" Content="{l:T '🚀 Ускорить'}" Margin="0,0,8,0"
+                                Command="{Binding DataContext.OptimizeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                IsEnabled="{Binding DataContext.IsOptimizing, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource Not}}"
+                                ToolTip="{l:T 'Поставить моды оптимизации (Sodium, Lithium, FerriteCore и др.) под эту версию. Перед этим лаунчер сохранит снимок модов.'}" />
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '👫 С другом'}" Command="{Binding ToggleInviteCommand}" Margin="0,0,8,0"
                                 ToolTip="{l:T 'Ссылка, по которой у друга сам поставится тот же Minecraft с модами'}" />
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '📤 Экспорт'}" Command="{Binding TogglePackExportCommand}" Margin="0,0,8,0"

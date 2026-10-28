@@ -52,9 +52,24 @@ public partial class CrashDoctorViewModel(
     /// <summary>Сообщить, что починка поменяла версию (главная перечитает список).</summary>
     public event Action? Fixed;
 
+    [ObservableProperty] private string _headerText = L.T("🩺 Доктор крашей");
+
+    /// <summary>Нажали «Играть всё равно» в проверке перед запуском.</summary>
+    public event Action? LaunchAnywayRequested;
+
+    /// <summary>Проверка перед запуском нашла проблемы: те же кнопки починки + «Играть всё равно».</summary>
+    public void ShowPreflight(Instance inst, IReadOnlyList<CrashDiagnosis> found)
+    {
+        _inst = inst;
+        HeaderText = L.T("🩺 Проверка перед запуском");
+        Show(found.Append(new CrashDiagnosis(L.T("Всё равно запустить?"), L.T("Если вы уверены, что так и задумано, — игра запустится без исправлений."),
+            new[] { new CrashFix(FixKind.LaunchAnyway, L.T("▶ Играть всё равно")) })));
+    }
+
     public async Task AnalyzeAsync(Instance inst, CrashInfo crash)
     {
         _inst = inst;
+        HeaderText = L.T($"🩺 Доктор крашей · код {crash.ExitCode}");
         var (text, ctx) = await Task.Run(() =>
         {
             _hw ??= HardwareService.Scan();
@@ -73,6 +88,7 @@ public partial class CrashDoctorViewModel(
     {
         if (item is null || _inst is not { } inst || IsWorking || item.IsDone) return;
         if (item.Fix.Kind == FixKind.Bisect) { await BisectAsync(); return; }
+        if (item.Fix.Kind == FixKind.LaunchAnyway) { LaunchAnywayRequested?.Invoke(); return; }
         IsWorking = true;
         try
         {

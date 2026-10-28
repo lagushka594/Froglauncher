@@ -158,6 +158,8 @@ public partial class App : Application
         s.AddSingleton<JavaViewModel>();
         s.AddSingleton<SkinsViewModel>();
         s.AddSingleton<SkinService>();
+        s.AddSingleton<OptimizeService>();
+        s.AddSingleton<PreflightService>();
         s.AddSingleton<SettingsViewModel>();
         s.AddSingleton<ProfileViewModel>();
         s.AddSingleton<StatsViewModel>();
