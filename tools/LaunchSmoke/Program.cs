@@ -1,10 +1,10 @@
 // Использование: LaunchSmoke <версия> <vanilla|fabric|quilt|forge|neoforge> [секунд_игры]
-// Ставит всё нужное, запускает игру оффлайн-ником FrogSmoke, ждёт загрузки и закрывает её.
+// Ставит всё нужное, запускает игру оффлайн-ником RibbixSmoke, ждёт загрузки и закрывает её.
 using System.IO;
 using System.Net.Http;
-using FrogLauncher.Core;
-using FrogLauncher.Models;
-using FrogLauncher.Services;
+using RibbixLauncher.Core;
+using RibbixLauncher.Models;
+using RibbixLauncher.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -29,7 +29,7 @@ if (args.ElementAtOrDefault(0) == "export")
     var src = System.Text.Json.JsonSerializer.Deserialize<Instance>(File.ReadAllText(Path.Combine(dir, "instance.json")), Json.Options)!;
     src.Directory = dir;
     var es = new ServiceCollection().AddLogging(b => b.AddSimpleConsole(o => o.SingleLine = true));
-    es.AddHttpClient(DownloadService.HttpClientName, c => c.DefaultRequestHeaders.UserAgent.ParseAdd("FrogLauncher-Smoke/1.0"));
+    es.AddHttpClient(DownloadService.HttpClientName, c => c.DefaultRequestHeaders.UserAgent.ParseAdd("RibbixLauncher-Smoke/1.0"));
     var esp = es.BuildServiceProvider();
     var transfer = new PackTransferService(esp.GetRequiredService<IHttpClientFactory>(), null!, null!,
         esp.GetRequiredService<ILogger<PackTransferService>>());
@@ -54,6 +54,10 @@ if (args.ElementAtOrDefault(0) == "adv")
     return 0;
 }
 
+// LaunchSmoke fps <версия> <vanilla|fabric> — запустить тестовую версию с агентом FPS и показать строки RIBBIXFPS.
+var fpsMode = args.ElementAtOrDefault(0) == "fps";
+if (fpsMode) args = args.Skip(1).Append("40").ToArray();
+
 var version = args.ElementAtOrDefault(0) ?? "1.20.1";
 var loader = Enum.Parse<LoaderType>(args.ElementAtOrDefault(1) ?? "fabric", ignoreCase: true);
 var seconds = int.Parse(args.ElementAtOrDefault(2) ?? "60");
@@ -63,10 +67,10 @@ var services = new ServiceCollection()
     .AddLogging(b => b.AddSimpleConsole(o => o.SingleLine = true).SetMinimumLevel(LogLevel.Information))
     .AddHttpClient()
     .AddSingleton(TimeProvider.System);
-services.AddHttpClient(DownloadService.HttpClientName, c => c.DefaultRequestHeaders.UserAgent.ParseAdd("FrogLauncher-Smoke/1.0"));
+services.AddHttpClient(DownloadService.HttpClientName, c => c.DefaultRequestHeaders.UserAgent.ParseAdd("RibbixLauncher-Smoke/1.0"));
 services.Configure<LauncherOptions>(_ => { });
 foreach (var t in new[] { typeof(DownloadService), typeof(VersionService), typeof(JavaService), typeof(ModLoaderService),
-             typeof(GameAuthService), typeof(LaunchService) })
+             typeof(GameAuthService), typeof(LaunchService), typeof(FpsBenchmarkService) })
     services.AddSingleton(t);
 var sp = services.BuildServiceProvider();
 
@@ -82,7 +86,7 @@ var inst = new Instance
     Height = 480,
 };
 inst.Directory = System.IO.Path.Combine(LauncherPaths.Instances, inst.Id);
-var account = new GameAccount { Type = AccountType.Offline, Name = "FrogSmoke", Uuid = GameAuthService.OfflineUuid("FrogSmoke") };
+var account = new GameAccount { Type = AccountType.Offline, Name = "RibbixSmoke", Uuid = GameAuthService.OfflineUuid("RibbixSmoke") };
 
 var lastStage = "";
 var progress = new Progress<DownloadProgress>(p =>
@@ -101,7 +105,18 @@ var exited = new TaskCompletionSource<CrashInfo?>();
 launch.Exited += (_, crash) => exited.TrySetResult(crash);
 
 var sw = System.Diagnostics.Stopwatch.StartNew();
-await launch.LaunchAsync(inst, account, autotune: false, progress, CancellationToken.None);
+LaunchExtras? extras = null;
+if (fpsMode)
+{
+    var (cls, field) = await sp.GetRequiredService<FpsBenchmarkService>().ResolveFpsFieldAsync(inst, CancellationToken.None);
+    var agent = System.IO.Path.Combine(AppContext.BaseDirectory, "ribbix-fps-agent.jar");
+    using (var res = typeof(FpsBenchmarkService).Assembly.GetManifestResourceStream("RibbixLauncher.ribbix-fps-agent.jar")!)
+    using (var fs = File.Create(agent)) res.CopyTo(fs);
+    Console.WriteLine($"[fps] поле FPS: {cls}.{field}");
+    extras = new LaunchExtras(true, new[] { $"-javaagent:{agent}={cls}:{field}" });
+    launch.OutputReceived += line => { if (line.Contains("RIBBIXFPS")) Console.WriteLine("  [fps] " + line); };
+}
+await launch.LaunchAsync(inst, account, autotune: false, progress, CancellationToken.None, extras: extras);
 Console.WriteLine($"[ok] процесс запущен за {sw.Elapsed.TotalSeconds:0} с, ждём загрузки игры…");
 
 var first = await Task.WhenAny(ready.Task, exited.Task, Task.Delay(TimeSpan.FromSeconds(seconds)));
@@ -115,7 +130,7 @@ if (first == exited.Task)
 
 Console.WriteLine(first == ready.Task ? $"[PASS] игра загрузилась: {await ready.Task}" : "[WARN] маркер загрузки не встречен, но процесс жив");
 foreach (var l in launch.Current!.Tail(8)) Console.WriteLine("  | " + l);
-await Task.Delay(3000);
+await Task.Delay(fpsMode ? 45000 : 3000);
 launch.Stop();
 await Task.WhenAny(exited.Task, Task.Delay(5000));
 Console.WriteLine("[ok] остановлено кнопкой «Стоп»");

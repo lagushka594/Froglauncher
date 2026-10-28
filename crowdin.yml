@@ -1,14 +1,14 @@
 # Переводы сообщества через Crowdin (https://crowdin.com → New project → Integrations → GitHub → этот репозиторий).
 # Исходник — Lang/ru.json (ключ = русская строка, его собирает tools/Localize/collect.py),
 # переводы Crowdin присылает пулл-реквестом в Lang/<язык>.json. Новый язык: добавить его в Crowdin
-# и в L.Languages (src/FrogLauncher/Core/Localization.cs).
+# и в L.Languages (src/RibbixLauncher/Core/Localization.cs).
 project_id_env: CROWDIN_PROJECT_ID
 api_token_env: CROWDIN_PERSONAL_TOKEN
 preserve_hierarchy: true
 
 files:
-  - source: /src/FrogLauncher/Lang/ru.json
-    translation: /src/FrogLauncher/Lang/%two_letters_code%.json
+  - source: /src/RibbixLauncher/Lang/ru.json
+    translation: /src/RibbixLauncher/Lang/%two_letters_code%.json
     languages_mapping:
       two_letters_code:
         pt-BR: pt-BR

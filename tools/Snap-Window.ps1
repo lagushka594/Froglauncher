@@ -1,5 +1,5 @@
 ﻿# Скриншот главного окна процесса (для проверки UI без ручного запуска).
-# Использование: .\Snap-Window.ps1 -ProcessName FrogLauncher -Out shot.png [-Click "x,y"]
+# Использование: .\Snap-Window.ps1 -ProcessName RibbixLauncher -Out shot.png [-Click "x,y"]
 param(
     [Parameter(Mandatory)] [string] $ProcessName,
     [Parameter(Mandatory)] [string] $Out,

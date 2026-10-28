@@ -1,5 +1,5 @@
 ﻿# Выбор элемента окна через UI Automation (для автопроверки UI): RadioButton/Button по подсказке или имени.
-# Использование: .\Ui-Select.ps1 -ProcessName FrogLauncher -Text "Подписка"
+# Использование: .\Ui-Select.ps1 -ProcessName RibbixLauncher -Text "Подписка"
 param(
     [Parameter(Mandatory)] [string] $ProcessName,
     [Parameter(Mandatory)] [string] $Text,

@@ -108,7 +108,7 @@ def mods_window(t, st):
     img.alpha_composite(bg, (0, 0))
     d.rectangle([0, 0, CW, 110], fill=(11, 18, 32, 150))
     img.alpha_composite(asset("ui/icon_frog.png", 0.58), (24, 14))
-    d.text((100, 26), "FrogLauncher", font=uib(38), fill=TEXT)
+    d.text((100, 26), "RibbixLauncher", font=uib(38), fill=TEXT)
     d.text((CW - 30, 40), "Моя сборка · 1.20.4 · Fabric", font=ui(26), fill=MUTED, anchor="ra")
     x = 28
     for i, tab in enumerate(["🎨 Графика", "🎮 Игра", "🧩 Моды", "📦 Паки"]):

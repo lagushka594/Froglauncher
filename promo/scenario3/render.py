@@ -335,7 +335,7 @@ def launcher(st):
     img.alpha_composite(bg, (0, 0))
     d.rectangle([0, 0, CW, 110], fill=(11, 18, 32, 150))
     img.alpha_composite(asset("ui/icon_frog.png", 0.58), (24, 14))
-    d.text((100, 26), "FrogLauncher", font=uib(38), fill=TEXT)
+    d.text((100, 26), "RibbixLauncher", font=uib(38), fill=TEXT)
     d.text((CW - 30, 40), "1.21.1 · Fabric", font=ui(26), fill=MUTED, anchor="ra")
     # вкладки
     x = 28
@@ -793,11 +793,11 @@ def scene6(t):
     s = lerp(0.3, 1, k) * (1 + 0.02 * math.sin(lt * 6))
     lgs = lg.resize((max(1, round(lg.width * s)), max(1, round(lg.height * s))), Image.LANCZOS)
     f.alpha_composite(lgs, (round(W / 2 - lgs.width / 2), round(760 - lgs.height / 2)))
-    paste_title(f, "🐸 FrogLauncher", t, S6 + 0.25, 1220, 104)
+    paste_title(f, "🐸 RibbixLauncher", t, S6 + 0.25, 1220, 104)
     paste_title(f, "БЕСПЛАТНО", t, S6 + 0.45, 1350, 120, (255, 236, 90))
     paste_title(f, "👇 Ссылка в профиле", t, S6 + 0.95, 1490, 80)
     if lt > 0.3:
-        d.text((W / 2, 1600), "@froglauncher", font=uib(56), fill=(6, 40, 18), anchor="ma")
+        d.text((W / 2, 1600), "@ribbix", font=uib(56), fill=(6, 40, 18), anchor="ma")
     if lt > 1.0:
         bob = abs(math.sin(lt * 6)) * 40
         d.text((W / 2 - 60, 1680 + bob), "👇", font=emo(110), embedded_color=True)

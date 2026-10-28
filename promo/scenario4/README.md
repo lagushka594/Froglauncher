@@ -1,6 +1,6 @@
 # Промо «Сезонные темы» (сценарий 4)
 
-9:16, 1080×1920, 30 fps, 22,6 с. Итог: `out/froglauncher_seasons_9x16.mp4`.
+9:16, 1080×1920, 30 fps, 22,6 с. Итог: `out/ribbix_seasons_9x16.mp4`.
 
 Темы и эффекты взяты из лаунчера: названия и цвета — `Services/ThemeService.cs`,
 эффекты (лепестки, блики и стрекоза, туман и листья, иней и снег, гирлянда) — `Views/SeasonEffects.cs`.
@@ -17,7 +17,7 @@
 python tts_neural.py
 python render.py
 python mix.py
-ffmpeg -i out/video_noaudio.mp4 -i out/audio_mix.wav -af loudnorm=I=-14:TP=-1.5 -c:v copy -c:a aac -b:a 192k -shortest out/froglauncher_seasons_9x16.mp4
+ffmpeg -i out/video_noaudio.mp4 -i out/audio_mix.wav -af loudnorm=I=-14:TP=-1.5 -c:v copy -c:a aac -b:a 192k -shortest out/ribbix_seasons_9x16.mp4
 ```
 
 Тайминг (сдвинут под озвучку — реплики сценария звучат ~25 с при плане 20 с):

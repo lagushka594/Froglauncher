@@ -5,9 +5,9 @@
 """
 import glob, html, io, json, os, re
 
-ROOT = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'FrogLauncher')
+ROOT = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'RibbixLauncher')
 ATTR = re.compile(r'\b(Text|Content|Header|ToolTip|Title)="([^"{]*[А-Яа-яЁё][^"]*)"')
-XMLNS = 'xmlns:l="clr-namespace:FrogLauncher.Core"'
+XMLNS = 'xmlns:l="clr-namespace:RibbixLauncher.Core"'
 
 keys = set()
 for f in glob.glob(os.path.join(ROOT, 'Views', '*.xaml')) + glob.glob(os.path.join(ROOT, 'Themes', '*.xaml')):

@@ -1,4 +1,4 @@
-"""Собирает все ключи в src/FrogLauncher/Lang/ru.json (исходник для Crowdin) и показывает, чего не хватает в переводах.
+"""Собирает все ключи в src/RibbixLauncher/Lang/ru.json (исходник для Crowdin) и показывает, чего не хватает в переводах.
 
 Запуск после xaml_to_t.py и cs_wrap.py: python tools/Localize/collect.py
 """
@@ -6,15 +6,15 @@ import glob, io, json, os, re
 
 HERE = os.path.dirname(__file__)
 REPO = os.path.join(HERE, '..', '..')
-LANG = os.path.join(REPO, 'src', 'FrogLauncher', 'Lang')
+LANG = os.path.join(REPO, 'src', 'RibbixLauncher', 'Lang')
 CYR = re.compile('[А-Яа-яЁё]')
 
 keys = set(json.load(io.open(os.path.join(HERE, 'keys_xaml.json'), encoding='utf-8')))
 keys |= set(json.load(io.open(os.path.join(HERE, 'keys_cs.json'), encoding='utf-8')))
 
 # Сообщения API и общих библиотек: показываются в тостах как есть — переводим по точному совпадению.
-for f in glob.glob(os.path.join(REPO, 'src', 'Frog.Api', '**', '*.cs'), recursive=True) + \
-         glob.glob(os.path.join(REPO, 'src', 'Frog.Shared', '*.cs')):
+for f in glob.glob(os.path.join(REPO, 'src', 'Ribbix.Api', '**', '*.cs'), recursive=True) + \
+         glob.glob(os.path.join(REPO, 'src', 'Ribbix.Shared', '*.cs')):
     if os.sep + 'obj' + os.sep in f or '/obj/' in f: continue
     for line in io.open(f, encoding='utf-8'):
         if re.search(r'\bLog|//|///', line.split('"')[0]): continue
@@ -28,7 +28,7 @@ for e in promos.get('events', []):
     keys.add(e['title'])
 
 # Слова, которые приходят в переводимые строки аргументами (склонения) и категории палитры.
-keys |= {'день', 'дня', 'дней', 'сессия', 'сессии', 'сессий', 'Действие', 'Страница', 'Настройка', 'Мод', 'Поиск'}
+keys |= {'день', 'дня', 'дней', 'сессия', 'сессии', 'сессий', 'запуск', 'запуска', 'запусков', 'скриншот', 'скриншота', 'скриншотов', 'марафон', 'марафона', 'марафонов', 'Действие', 'Страница', 'Настройка', 'Мод', 'Поиск'}
 # Подписи кнопок атласа (ArtLabel Label="…").
 keys |= {'Главная', 'Каталог', 'Профиль', 'Настройки', 'Помощь', 'Выход', 'Играть'}
 # Подписи скидок, которые передаются через Discount.Label.

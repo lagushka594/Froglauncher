@@ -1,20 +1,20 @@
-# 🐸 FrogLauncher
+# 🐸 Ribbix
 
 Неофициальный лаунчер Minecraft с открытым кодом: ванилла, Fabric, Quilt, Forge (1.7.10 → 1.21+) и NeoForge,
-каталог модов Modrinth, подписки на функции лаунчера (покупка через тикет в Discord) и выдача тарифов из FrogNews.
+каталог модов Modrinth, подписки на функции лаунчера (покупка через тикет в Discord) и выдача тарифов из Ribbix News.
 
-> FrogLauncher не является продуктом Mojang/Microsoft и не одобрен ими. Minecraft — товарный знак Mojang AB.
+> Ribbix не является продуктом Mojang/Microsoft и не одобрен ими. Minecraft — товарный знак Mojang AB.
 > Подписка даёт доступ только к функциям лаунчера; **игра запускается на любом тарифе**, даже без аккаунта.
 
-Исходный код: https://github.com/lagushka594/Froglauncher
+Исходный код: https://github.com/lagushka594/Ribbix_Studio
 
 ---
 
 ## 1. Архитектура
 
 ```
-Froglauncher/
-├─ FrogLauncher.sln
+Ribbix_Studio/
+├─ RibbixLauncher.sln
 ├─ Directory.Build.props / Directory.Packages.props   — общие настройки, версии NuGet
 ├─ assets/
 │  ├─ atlas/            — исходные атласы (3 листа)
@@ -22,27 +22,27 @@ Froglauncher/
 │  ├─ out/{installer,ui,main}/*.png|ico — нарезанные ассеты (их использует UI)
 │  └─ discord/          — картинки для Discord Rich Presence
 ├─ src/
-│  ├─ Frog.Shared/                 — DTO, ключи тиров/фич, маскирование PII, JSON snake_case
-│  ├─ Frog.Api/                    — ASP.NET Core 8 + PostgreSQL + EF Core
-│  │  ├─ Data/ (Entities, FrogDbContext, Migrations/)
+│  ├─ Ribbix.Shared/                 — DTO, ключи тиров/фич, маскирование PII, JSON snake_case
+│  ├─ Ribbix.Api/                    — ASP.NET Core 8 + PostgreSQL + EF Core
+│  │  ├─ Data/ (Entities, RibbixDbContext, Migrations/)
 │  │  ├─ Services/ (TierCatalog, JwtService, EntitlementService, BillingService,
 │  │  │            ProrationCalculator, AdminService, AccountService, SubscriptionLifecycleWorker)
 │  │  ├─ Payments/ (IPaymentProvider, YooKassaProvider, PaddleProvider)
 │  │  ├─ Controllers/ (auth, tiers, entitlements, billing, admin)
 │  │  └─ tiers.json                — единственный источник цен
-│  ├─ FrogLauncher/                — WPF .NET 8, MVVM (CommunityToolkit), DI (Generic Host)
+│  ├─ RibbixLauncher/                — WPF .NET 8, MVVM (CommunityToolkit), DI (Generic Host)
 │  │  ├─ Core/ (пути, DPAPI-хранилище, хэши)
 │  │  ├─ Models/ (version.json Mojang, инстанс, аккаунты)
-│  │  ├─ Services/ (Download, Version, Java, ModLoader, Launch, GameAuth, FrogApiClient,
+│  │  ├─ Services/ (Download, Version, Java, ModLoader, Launch, GameAuth, RibbixApiClient,
 │  │  │            EntitlementService, Instance, DiscordPresence, Theme, UrlScheme/SingleInstance)
 │  │  ├─ ViewModels/ + Views/ (Главная, Каталог, Java, Подписка, Профиль, Настройки, Помощь)
 │  │  └─ Themes/Theme.xaml
-│  ├─ FrogNews.Subscriptions/      — модуль «Подписки» для существующего FrogNews (WPF)
-│  └─ FrogLauncher.Installer/      — установщик FrogLauncherSetup.exe (.NET Framework 4.8)
-├─ samples/FrogNews.DevHost/       — мини-«FrogNews» для проверки модуля без вашего приложения
+│  ├─ RibbixNews.Subscriptions/      — модуль «Подписки» для существующего Ribbix News (WPF)
+│  └─ RibbixLauncher.Installer/      — установщик RibbixLauncherSetup.exe (.NET Framework 4.8)
+├─ samples/RibbixNews.DevHost/       — мини-«Ribbix News» для проверки модуля без вашего приложения
 ├─ tests/
-│  ├─ Frog.Api.Tests/              — unit + сквозные сценарии подписок (WebApplicationFactory)
-│  └─ FrogLauncher.Tests/          — офлайн-кэш, команда запуска, Java, maven, deeplink
+│  ├─ Ribbix.Api.Tests/              — unit + сквозные сценарии подписок (WebApplicationFactory)
+│  └─ RibbixLauncher.Tests/          — офлайн-кэш, команда запуска, Java, maven, deeplink
 ├─ tools/
 │  ├─ AssetCutter/                 — нарезка атласов → PNG/ICO
 │  ├─ LaunchSmoke/                 — реальная установка и запуск игры без UI
@@ -51,19 +51,19 @@ Froglauncher/
 └─ docs/ (schema.sql, TESTING.md)
 ```
 
-**Почему WPF, а не Avalonia.** Лаунчер завязан на Windows: DPAPI, реестр (поиск Java, URL-схема `froglauncher://`),
-Win32-процессы. FrogNews уже на WPF — общие стили, навыки и инструменты. Avalonia имеет смысл, когда понадобятся macOS/Linux:
+**Почему WPF, а не Avalonia.** Лаунчер завязан на Windows: DPAPI, реестр (поиск Java, URL-схема `ribbix://`),
+Win32-процессы. Ribbix News уже на WPF — общие стили, навыки и инструменты. Avalonia имеет смысл, когда понадобятся macOS/Linux:
 сервисный слой (`Services/`) от WPF не зависит и переносится как есть.
 
 **Установщик на .NET Framework 4.8**, потому что он встроен в Windows 10/11. Установщику не нужен свой рантайм,
-поэтому его размер ≈ размеру лаунчера. Ставит в `%LocalAppData%\Programs\FrogLauncher` без прав администратора.
+поэтому его размер ≈ размеру лаунчера. Ставит в `%LocalAppData%\Programs\RibbixLauncher` без прав администратора.
 
 ### Как связаны части
 
 ```
-FrogLauncher ──JWT aud=froglauncher──► Frog.Api ◄──JWT aud=frognews (role=superadmin)── FrogNews
+Ribbix ──JWT aud=ribbix──► Ribbix.Api ◄──JWT aud=ribbixnews (role=superadmin)── Ribbix News
       │  ▲                               │  ▲
-      │  └── froglauncher://billing/...  │  └── вебхуки YooKassa / Paddle
+      │  └── ribbix://billing/...  │  └── вебхуки YooKassa / Paddle
       └── браузер → страница оплаты ─────┘
 ```
 
@@ -71,8 +71,8 @@ FrogLauncher ──JWT aud=froglauncher──► Frog.Api ◄──JWT aud=frogn
 
 ## 2. Тиры и правила
 
-`src/Frog.Api/tiers.json` проверяется при старте API: цена 50–700 ₽/мес, год = 10 × месяц, `admin` скрыт и без цены.
-Ссылки на другие тиры в `entitlements` (`"frog_plus"`) разворачиваются рекурсивно.
+`src/Ribbix.Api/tiers.json` проверяется при старте API: цена 50–700 ₽/мес, год = 10 × месяц, `admin` скрыт и без цены.
+Ссылки на другие тиры в `entitlements` (`"ribbix_plus"`) разворачиваются рекурсивно.
 
 | Ситуация | Что происходит |
 |---|---|
@@ -81,14 +81,14 @@ FrogLauncher ──JWT aud=froglauncher──► Frog.Api ◄──JWT aud=frogn
 | Апгрейд в том же периоде | Доплата = (новая − старая цена) × доля оставшегося времени, дата окончания сохраняется |
 | Апгрейд месяц → год | Новый период с сегодняшнего дня, остаток старого идёт в зачёт |
 | Понижение тарифа | Через отмену автопродления; после окончания периода оформляется новый тариф |
-| Покупка (по умолчанию) | «Оформить» копирует заказ и открывает Discord → тикет → superadmin в FrogNews жмёт «Выдать подписку» |
+| Покупка (по умолчанию) | «Оформить» копирует заказ и открывает Discord → тикет → superadmin в Ribbix News жмёт «Выдать подписку» |
 | Повторная выдача того же тарифа | Срок продлевается от текущей даты окончания; другой тариф заменяет прежний |
 | Ручная подписка закончилась | Grace 7 дней с баннером «Продлите» → затем `tadpole` |
-| Выдача Admin | Только FrogNews, только роль `superadmin`, причина обязательна, запись в аудит |
+| Выдача Admin | Только Ribbix News, только роль `superadmin`, причина обязательна, запись в аудит |
 | Отзыв Admin | Отзыв всех refresh-токенов + инкремент `TokenVersion` → старый access-токен сразу отклоняется |
 | Сервер недоступен | Лаунчер работает по кэшу `entitlements.dat` (DPAPI) до 7 дней и показывает баннер |
 
-Лимит версий (инстансов): **Tadpole — 25**, Froglet — 50, Frog+ и выше — без ограничений.
+Лимит версий (инстансов): **Tadpole — 25**, Ribbix Lite — 50, Ribbix+ и выше — без ограничений.
 Модлоадеры и каталог модов — бесплатно на любом тарифе.
 
 Карточки тарифов видны всегда: если сервер недоступен, лаунчер показывает последнюю сохранённую копию `/tiers`,
@@ -102,20 +102,20 @@ FrogLauncher ──JWT aud=froglauncher──► Frog.Api ◄──JWT aud=frogn
 
 ```powershell
 # всё решение + тесты
-dotnet build FrogLauncher.sln
-dotnet test FrogLauncher.sln
+dotnet build RibbixLauncher.sln
+dotnet test RibbixLauncher.sln
 
-# релиз: artifacts\FrogLauncherSetup.exe и artifacts\api\
+# релиз: artifacts\RibbixLauncherSetup.exe и artifacts\api\
 powershell -ExecutionPolicy Bypass -File build\build.ps1
 ```
 
-### Backend (Frog.Api)
+### Backend (Ribbix.Api)
 
 Секреты — только в User Secrets или переменных окружения:
 
 ```powershell
-cd src\Frog.Api
-dotnet user-secrets set "ConnectionStrings:Frog" "Host=localhost;Database=frog;Username=frog;Password=..."
+cd src\RibbixLauncher.Api
+dotnet user-secrets set "ConnectionStrings:Ribbix" "Host=localhost;Database=ribbix;Username=ribbix;Password=..."
 dotnet user-secrets set "Jwt:SigningKey"        "<случайные 48+ символов>"
 dotnet user-secrets set "Jwt:ServiceSigningKey" "<другие случайные 48+ символов>"
 dotnet user-secrets set "YooKassa:ShopId"        "..."
@@ -123,42 +123,42 @@ dotnet user-secrets set "YooKassa:SecretKey"     "..."
 dotnet user-secrets set "YooKassa:WebhookSecret" "<случайная строка>"
 dotnet user-secrets set "Paddle:ApiKey"          "..."
 dotnet user-secrets set "Paddle:WebhookSecret"   "pdl_ntfset_..."
-dotnet user-secrets set "Paddle:Prices:frog_plus:month" "pri_..."   # и так для каждого тира/периода
+dotnet user-secrets set "Paddle:Prices:ribbix_plus:month" "pri_..."   # и так для каждого тира/периода
 
 dotnet tool restore
 dotnet ef database update            # или: dotnet run -- migrate
-$env:FROG_STAFF_PASSWORD = "<пароль superadmin>"; dotnet run -- seed-staff boss superadmin
+$env:RIBBIX_STAFF_PASSWORD = "<пароль superadmin>"; dotnet run -- seed-staff boss superadmin
 dotnet run                           # http://localhost:5080
 ```
 
-В production то же самое задаётся переменными окружения: `ConnectionStrings__Frog`, `Jwt__SigningKey`, `YooKassa__SecretKey` и т.д.
+В production то же самое задаётся переменными окружения: `ConnectionStrings__Ribbix`, `Jwt__SigningKey`, `YooKassa__SecretKey` и т.д.
 SQL-скрипт схемы: `docs/schema.sql`.
 
-**Без PostgreSQL (только для разработки):** `ConnectionStrings__Frog=InMemory` + `ASPNETCORE_ENVIRONMENT=Development`.
-Переменная `FROG_DEV_STAFF=boss:superadmin:пароль` создаст сотрудника FrogNews при старте.
+**Без PostgreSQL (только для разработки):** `ConnectionStrings__Ribbix=InMemory` + `ASPNETCORE_ENVIRONMENT=Development`.
+Переменная `RIBBIX_DEV_STAFF=boss:superadmin:пароль` создаст сотрудника Ribbix News при старте.
 
-**Уже есть свой backend с `/auth/login`?** Перенесите из `Frog.Api` сервисы, контроллеры и миграцию. Свой логин оставьте,
+**Уже есть свой backend с `/auth/login`?** Перенесите из `Ribbix.Api` сервисы, контроллеры и миграцию. Свой логин оставьте,
 но в access-токен добавьте claims `tier`, `entitlements[]`, `tv` (см. `JwtService.CreateAccessToken`), а refresh-токены
-храните хэшем и ротируйте. Таблица `staff_accounts` нужна, только если у FrogNews нет своей таблицы сотрудников.
+храните хэшем и ротируйте. Таблица `staff_accounts` нужна, только если у Ribbix News нет своей таблицы сотрудников.
 
 ### Лаунчер
 
-`src/FrogLauncher/appsettings.json` (рядом с exe):
+`src/RibbixLauncher/appsettings.json` (рядом с exe):
 
 | Ключ | Значение |
 |---|---|
-| `ApiBaseUrl` | адрес Frog.Api |
+| `ApiBaseUrl` | адрес Ribbix.Api |
 | `MicrosoftClientId` | `577bb56b-e06f-47d3-98cb-ebb21dacf055` |
 | `DiscordApplicationId` | `1564103277010886746` |
-| `SubscriptionSource` | `discord` — тариф по ролям Discord (без своего сервера, по умолчанию) или `server` — Frog.Api |
+| `SubscriptionSource` | `discord` — тариф по ролям Discord (без своего сервера, по умолчанию) или `server` — Ribbix.Api |
 | `DiscordGuildId`, `DiscordRoles` | ID вашего сервера и соответствие «ID роли → тариф» (см. раздел 4) |
 | `DiscordRedirectPort` | порт возврата из браузера при входе через Discord (`53134`) |
 | `PurchaseMode` | `discord` (тикет в Discord, по умолчанию) или `checkout` (YooKassa/Paddle) |
 | `DiscordPurchaseUrl` | `https://discord.gg/u6zJZ7BzU5` |
 | `GitHubUrl`, `OfferUrl`, `RefundPolicyUrl` | ссылки в «Помощи» и «Подписке» |
 
-Любой ключ можно переопределить переменной `FROGLAUNCHER_Launcher__ApiBaseUrl=...`.
-Данные лежат в `%AppData%\FrogLauncher`: `game/`, `instances/{id}/instance.json`, `runtime/` (Java),
+Любой ключ можно переопределить переменной `RIBBIX_Launcher__ApiBaseUrl=...`.
+Данные лежат в `%AppData%\RibbixLauncher`: `game/`, `instances/{id}/instance.json`, `runtime/` (Java),
 `session.dat`, `accounts.dat`, `entitlements.dat` (все `.dat` зашифрованы DPAPI), `logs/`.
 
 **Вход через Microsoft.** Используется Device Code Flow (`XboxLive.signin offline_access`, tenant `consumers`).
@@ -173,14 +173,14 @@ SQL-скрипт схемы: `docs/schema.sql`.
 `assets/discord/` под их именами: `frog_logo`, `playing`, `download`, `java` (пересобрать: `tools\Make-DiscordAssets.ps1`).
 Отключается в «Настройках».
 
-### FrogNews
+### Ribbix News
 
-Модуль `src/FrogNews.Subscriptions` подключается в существующее приложение:
+Модуль `src/RibbixNews.Subscriptions` подключается в существующее приложение:
 
 ```csharp
-services.AddFrogNewsSubscriptions(new Uri("https://api.froglauncher.example/"));
+services.AddFrogNewsSubscriptions(new Uri("https://api.ribbix.example/"));
 
-// после входа сотрудника в FrogNews — получить service-токен (audience=frognews):
+// после входа сотрудника в Ribbix News — получить service-токен (audience=ribbixnews):
 await sp.GetRequiredService<ServiceTokenProvider>().LoginAsync(login, password, ct);
 
 // пункт меню «Подписки» — только для superadmin (роль из подписанного сервером токена):
@@ -190,9 +190,9 @@ subscriptionsMenuItem.Visibility = SubscriptionsMenu.IsVisible(tokens) ? Visibil
 host.Content = new SubscriptionsView { DataContext = sp.GetRequiredService<SubscriptionsViewModel>() };
 ```
 
-Пока модуль не встроен в ваше приложение, можно пользоваться готовым **`FrogNews.exe`** (`samples/FrogNews.DevHost`,
-собирается `build.ps1` в `artifacts\FrogNews`). Адрес backend — в `FrogNews.settings.json` рядом с exe
-(или переменная `FROGNEWS_API`).
+Пока модуль не встроен в ваше приложение, можно пользоваться готовым **`RibbixNews.exe`** (`samples/RibbixNews.DevHost`,
+собирается `build.ps1` в `artifacts\RibbixNews`). Адрес backend — в `RibbixNews.settings.json` рядом с exe
+(или переменная `RIBBIXNEWS_API`).
 
 ### v2.1 «Комфорт»
 
@@ -203,10 +203,10 @@ Server List Ping, с поддержкой SRV-записей `_minecraft._tcp`. 
 1.20+ — `--quickPlayMultiplayer`, старые версии — `--server/--port`.
 
 **Автообновление.** Через 5 с после запуска установленный лаунчер проверяет GitHub Releases (`UpdateRepository`),
-выбирает самую высокую версию (канал stable — только релизы; beta — и pre-release, для Frog+ и выше), в фоне скачивает
-`FrogLauncherSetup.exe`, сверяет SHA-256 (digest ассета GitHub или строка `sha256: …` в описании) и показывает баннер
+выбирает самую высокую версию (канал stable — только релизы; beta — и pre-release, для Ribbix+ и выше), в фоне скачивает
+`RibbixLauncherSetup.exe`, сверяет SHA-256 (digest ассета GitHub или строка `sha256: …` в описании) и показывает баннер
 «Обновить и перезапустить». Установщик ставит тихо (`--silent --relaunch`), дожидается закрытия лаунчера и запускает его.
-Выпуск: `build\build.ps1 -Version 2.2.0` → релиз с тегом `v2.2.0` и файлом `FrogLauncherSetup.exe`.
+Выпуск: `build\build.ps1 -Version 2.2.0` → релиз с тегом `v2.2.0` и файлом `RibbixLauncherSetup.exe`.
 Для беты — тег `v2.2.0-beta.1` и галочка «Set as a pre-release».
 
 **Онбординг.** Первый запуск (нет ни аккаунтов, ни версий): приветствие → ник → RAM (рекомендация под ПК) →
@@ -223,7 +223,7 @@ Ctrl+Shift+M — свернуть в трей и играть.
 Меню иконки: «Открыть», «▶ Играть», «■ Остановить игру», «Выход». Во время игры — напоминание о перерыве каждые 1–3 ч
 (или выкл.). Повторный запуск ярлыка достаёт окно из трея.
 
-**Статистика** («Профиль» → «📊 Статистика»). Сессии игры пишутся в `%AppData%\FrogLauncher\playtime.json`
+**Статистика** («Профиль» → «📊 Статистика»). Сессии игры пишутся в `%AppData%\RibbixLauncher\playtime.json`
 (короче 30 с не считаются). Всего часов (больше из двух: сессии лаунчера или `stats/*.json` миров), сессии, самая
 долгая, серия дней подряд, график за 14 дней (сессии через полночь делятся между днями), любимые версии и счётчики
 Minecraft: достижения (без рецептов), км пешком, прыжки, мобы, смерти, миры. Бейджи: 🌱 Новичок 0–10 ч,
@@ -240,7 +240,7 @@ Minecraft: достижения (без рецептов), км пешком, п
 
 **Скриншоты** («Профиль» → «🖼 Скриншоты»). Галерея `screenshots` всех версий: открыть, показать в папке, удалить
 (в корзину). «🐸 Поделиться» рисует карточку 1080×1920 (скриншот, логотип, ник, версия, дата) в
-`Изображения\FrogLauncher`, копирует её в буфер и предлагает «Открыть TikTok» — страница загрузки + папка с файлом.
+`Изображения\RibbixLauncher`, копирует её в буфер и предлагает «Открыть TikTok» — страница загрузки + папка с файлом.
 Публикация прямо из лаунчера требует одобренного приложения TikTok for Developers (Content Posting API) — пока вручную.
 
 **Миры** («Каталог» → версия → «🌍 Миры»). Название, режим, сложность, версия, размер и «играли …» из `level.dat`
@@ -256,7 +256,7 @@ Minecraft: достижения (без рецептов), км пешком, п
 правится коммитом без релиза), без сети — сохранённую или вшитую копию; API читает тот же файл.
 
 - Акции по расписанию повторяются каждый год (`from`/`to` — `MM-dd`, можно «через Новый год»: `12-20` … `01-10`):
-  🎂 День рождения FrogLauncher −25% (**26–28 октября** — поменяйте даты на свои), 🎃 Хэллоуин −30% (29.10–02.11),
+  🎂 День рождения Ribbix −25% (**26–28 октября** — поменяйте даты на свои), 🎃 Хэллоуин −30% (29.10–02.11),
   🖤 Чёрная пятница −50% (`"rule": "black-friday"` — пятница после 4-го четверга ноября и до Киберпонедельника),
   🎄 Новый год −40% (20.12–10.01).
 - Промокоды: `code` (открыто) или `hash` — SHA-256 от кода в верхнем регистре, тогда его не подсмотреть в репозитории:
@@ -277,14 +277,14 @@ Minecraft: достижения (без рецептов), км пешком, п
 
 - Ключ перевода — русская строка (как gettext). В XAML — `Text="{l:T 'Играть'}"`, в коде — `L.T($"Осталось {n} дней")`:
   обработчик интерполяции собирает ключ «Осталось {0} дней» и переводит строковые аргументы («дней» → «days»).
-- Словари: `src/FrogLauncher/Lang/{en,es,de,pt-BR}.json`, исходник — `Lang/ru.json`.
+- Словари: `src/RibbixLauncher/Lang/{en,es,de,pt-BR}.json`, исходник — `Lang/ru.json`.
 - Кнопки атласа с вшитой русской подписью (`ArtLabel`): на других языках — вариант `*_blank.png` и текст поверх.
 - Новые строки: `python tools/Localize/xaml_to_t.py`, `python tools/Localize/cs_wrap.py` (обернёт литералы),
   `python tools/Localize/collect.py` (обновит ru.json и покажет, чего не хватает), `python tools/Localize/check.py`.
   Строка, которую переводить нельзя (данные, имена для автоматизации), — пометка `// noloc` на той же строке.
 - Crowdin: `crowdin.yml` в корне. Создайте проект на crowdin.com → Integrations → GitHub → этот репозиторий; переводы
   будут приходить пулл-реквестами в `Lang/`.
-- Проверить язык без правки настроек: переменная окружения `FROGLAUNCHER_LANG=en`.
+- Проверить язык без правки настроек: переменная окружения `RIBBIX_LANG=en`.
 
 **Глобальный поиск (Ctrl+K или «🔎 Поиск» в шапке).** Командная палитра: страницы, действия («Играть», «Новая версия»,
 «Проверить обновления», «Ввести промокод»…), пункты настроек, ваши версии («Играть: …», «Настройки: …»), версии Minecraft
@@ -319,25 +319,86 @@ Minecraft: достижения (без рецептов), км пешком, п
 - 🎄 ёлка украшается по дням заходов: 5 дней — гирлянда, 10 — звезда;
 - 🎆 фейерверк на всё окно 31 декабря 23:59–00:01 (и пункт «Запустить фейерверк» в Ctrl+K в праздники);
 - 🎵 новогодний плейлист — `NewYearPlaylistUrl` в appsettings.json (по умолчанию поиск на YouTube);
-- 🧧 промокод FROG2026 — 40% на Frog Legend до 10 января (в `promos.json`).
+- 🧧 промокод FROG2026 — 40% на Ribbix Legend до 10 января (в `promos.json`).
 
-Проверить любой день без перевода часов: `FROGLAUNCHER_DATE=2026-12-31T23:59:30` (время идёт от этой точки).
+Проверить любой день без перевода часов: `RIBBIX_DATE=2026-12-31T23:59:30` (время идёт от этой точки).
+
+### v2.7 Ribbix Launcher (бывший FrogLauncher)
+
+Лаунчер и команда переименованы: **Ribbix Launcher** от **Ribbix Studio**, лягушка-маскот осталась. Переезд — без
+действий игрока:
+- данные `%AppData%\FrogLauncher` при первом запуске переносятся в `%AppData%\RibbixLauncher` (версии, миры,
+  аккаунты, статистика), пути в `instance.json`/`settings.json` исправляются; если старый лаунчер ещё открыт —
+  работаем в старой папке и переезжаем при следующем запуске;
+- установщик удаляет старую программу, ярлыки и запись FrogLauncher в «Программах» (данные не трогает);
+- ссылки `froglauncher://` (оплата, «Играть с другом») по-прежнему открывают лаунчер, новые — `ribbix://`;
+- импортируются копии с `frog-instance.json` и пресеты `.frogpreset.json`;
+- автообновление ищет `RibbixLauncherSetup.exe`, а в старых релизах — `FrogLauncherSetup.exe`. Установленные
+  FrogLauncher 2.x ищут `FrogLauncherSetup.exe` в `lagushka594/Froglauncher` — GitHub перенаправляет этот адрес на
+  `lagushka594/Ribbix_Studio`, поэтому к релизу прикрепляйте **оба** файла (`build.ps1` кладёт копию под старым именем).
+
+Тарифы: Tadpole, **Ribbix Lite** (был Froglet), **Ribbix+**, **Ribbix Pro**, **Ribbix Legend**; слаги `ribbix_lite`,
+`ribbix_plus`, `ribbix_pro`, `ribbix_legend`. Админка — **Ribbix News** (`RibbixNews.exe`; читает и старый
+`FrogNews.settings.json`). Переменные окружения: `RIBBIX_*` вместо `FROGLAUNCHER_*`/`FROG_*`. Логотип и надписи
+установщика перерисованы `tools/BrandArt` (лягушка из старого логотипа, пиксельный шрифт по клеткам).
+
+### v2.6 «Доктор крашей», «Мой год», с другом по ссылке, замер FPS, таймлапсы
+
+**🩺 Доктор крашей** (главная, после вылета). `CrashDoctor` разбирает crash-report и лог и сопоставляет с известными
+причинами, вместо стены текста — объяснение и кнопки починки:
+- не хватает мода (Fabric/Quilt «requires … which is missing», Forge/NeoForge «Mod ID … [MISSING]») → «Скачать» с Modrinth;
+- мод не под эту версию Minecraft / нужна другая версия зависимости → «Обновить» (Modrinth `version_files/update`) или «Выключить»;
+- не та Java (`class file version 65` → Java 21; старый Forge → Java 8) → скачать Temurin и запомнить для версии;
+- мало памяти (`OutOfMemoryError`) → «Дать N ГБ» (не больше безопасного для ПК); слишком много (`Could not reserve`) → меньше;
+- конфликт модов, дубликаты, драйвер видеокарты (OpenGL/GLFW 65542), подозреваемый мод из отчёта/mixin;
+- игра упала после «Обновить всё» → «↩ Вернуть моды как было».
+Лог и mclo.gs остались под переключателем «Показать лог».
+
+**🔎 Поиск мода-виновника** (`ModBisectService`). Половинное деление: включается половина подозреваемых модов вместе
+с их зависимостями (из `fabric.mod.json`/`quilt.mod.json`/`mods.toml`) и библиотеками (Fabric API, Architectury…),
+игра запускается сама и ждёт главного меню (`Sound engine started`) или падения. 100 модов — ~7 запусков. Моды
+всегда возвращаются как были, даже если лаунчер закрыли посередине (`bisect.json`).
+
+**⬆ Обновить всё со снимком** («Каталог» → версия → моды → «🔄 Проверить обновления»). Перед обновлением папка
+`mods` копируется в `instances/<id>/mod-snapshots/` (3 последних), «↩ Вернуть как было» восстанавливает её.
+Снимок помечается проверенным после первого нормального выхода из игры.
+
+**🎁 Мой год в Minecraft** («Профиль» → «🎁 Мой год», Ctrl+K → «Мой год»). 8 вертикальных карточек 1080×1920:
+часы за год, любимая версия и сервер, самый активный день и лучшая серия, год по месяцам, ритм (сова/пташка),
+км пешком (в марафонах), прыжки, мобы, смерти, достижения, бейдж. «Поделиться» — файл + буфер обмена,
+«Сохранить все» — серия в «Изображения\RibbixLauncher\Мой год N». Только данные этого ПК, без выдуманных сравнений.
+
+**👫 Играть с другом** (версия → «👫 С другом»). Ссылка `ribbix://play?n=…&mc=…&l=…&lv=…&s=…&f=…` несёт ID
+версий Modrinth (моды, ресурспаки `r~`, шейдеры `s~`) и сервер. У друга: подтверждение → та же версия с загрузчиком
+→ файлы с cdn.modrinth.com с проверкой SHA1 → запуск с автоподключением. Повторная ссылка открывает ту же версию
+(`ShareKey`). Для Discord — https-страница `GET /play` в API (появится, когда API развёрнут). Файлы не с Modrinth
+в ссылку не попадают — лаунчер их перечисляет.
+
+**📈 Настройка по реальному замеру** (версия → «🎨 Графика» → «Замерить FPS», цель 30–144). Копия последнего мира
+(регионы 3×3 вокруг игрока), `--quickPlaySingleplayer`, Java-агент `tools/RibbixFpsAgent` раз в секунду печатает
+настоящий FPS (поле `Minecraft.fps` по маппингам Mojang, для Fabric — через intermediary). Перебор пресетов, пока
+не найдётся самый красивый, который держит цель (10-й перцентиль ≥ 95% цели). `options.txt` восстанавливается.
+Работает на 1.20+, ванилла/Fabric/Quilt/NeoForge 1.20.5+. Проверка агента: `dotnet run --project tools/LaunchSmoke -- fps 1.21.2 vanilla`.
+
+**🎞 Таймлапс стройки** (версия → «🌍 Миры» → «🎞 Таймлапс»). Каждый бэкап + текущий мир → вид сверху 256×256 блоков
+вокруг игрока (регионы `.mca`, `Heightmaps.WORLD_SURFACE`, палитры секций 1.13+), тени как на картах, подписи
+с датой → GIF 720×1280 (свой LZW-кодировщик) и PNG-кадры для CapCut в «Изображения\RibbixLauncher\Таймлапсы».
 
 ### v2.5 Экспорт и импорт сборок и миров
 
 **Экспорт** («Каталог» → версия → «📤 Экспорт»):
-- `.mrpack` — формат Modrinth, открывают Modrinth App, Prism Launcher, ATLauncher и FrogLauncher. Файлы из `mods`,
+- `.mrpack` — формат Modrinth, открывают Modrinth App, Prism Launcher, ATLauncher и Ribbix. Файлы из `mods`,
   `resourcepacks`, `shaderpacks` ищутся на Modrinth по SHA1 (`POST /v2/version_files`) и попадают в сборку ссылками
   с SHA1 и SHA512; всё остальное (свои моды, конфиги, options.txt) — в `overrides/`. Без интернета — всё внутрь.
   Пример: «Wizards RPG» — 57 из 58 модов ссылками, файл 2,3 МБ.
-- `.zip` — полная копия FrogLauncher: `frog-instance.json` (память, сборщик мусора, флаги, разрешение) + `.minecraft`.
+- `.zip` — полная копия Ribbix: `ribbix-instance.json` (память, сборщик мусора, флаги, разрешение) + `.minecraft`.
   Путь к Java не переносится. Для переезда на другой компьютер.
 - Галочки: конфиги и настройки игры, миры. Никогда не попадают: логи, отчёты о крэшах, скриншоты, бэкапы лаунчера,
   аккаунты и пароли.
 
 **Импорт** («Каталог» → «📥 Импорт» или перетащить файл на «Каталог»):
 - `.mrpack` — как сборка из каталога Modrinth (только разрешённые хосты, проверка SHA1);
-- полная копия FrogLauncher (`.zip` с `frog-instance.json`);
+- полная копия Ribbix (`.zip` с `ribbix-instance.json`);
 - экспорт Prism Launcher / MultiMC (`.zip` с `mmc-pack.json`): Minecraft, Fabric, Quilt, Forge, NeoForge;
 - CurseForge (`manifest.json`) — понятный отказ: моды CurseForge скачиваются только через закрытое API;
 - мир, брошенный на «Каталог», — предложение добавить его в выбранную версию.
@@ -357,10 +418,10 @@ Minecraft: достижения (без рецептов), км пешком, п
 |---|---|---|
 | 🎨 Графика | пресеты «Подобрать под мой ПК», графика Fast/Fancy/Fabulous, облака, частицы, плавное освещение, тени, дальность прорисовки и симуляции, FPS-лимит, V-Sync, mipmap, дальность сущностей, FOV, яркость, эффекты, покачивание камеры, интерфейс и чат; Sodium (если установлен) и шейдеры Iris | `options.txt`, `config/sodium-options.json`, `config/iris.properties` |
 | 🎮 Игра | язык игры, чат, автопрыжок, демо-режим, громкость 10 категорий, чувствительность и инверсия мыши, переназначение клавиш (клик → нажать клавишу/кнопку мыши) | `options.txt` |
-| ⚡ Производительность | RAM min/max (с рекомендацией и проверкой), GC: G1 / ZGC / Parallel, приоритет процесса, автотюнинг Aikar (Frog+), JVM-аргументы, разрешение-пресеты, полный экран, дискретная видеокарта (ноутбуки с двумя GPU) | `instance.json`, реестр Windows (UserGpuPreferences) |
+| ⚡ Производительность | RAM min/max (с рекомендацией и проверкой), GC: G1 / ZGC / Parallel, приоритет процесса, автотюнинг Aikar (Ribbix+), JVM-аргументы, разрешение-пресеты, полный экран, дискретная видеокарта (ноутбуки с двумя GPU) | `instance.json`, реестр Windows (UserGpuPreferences) |
 | ☕ Java | список найденных JRE/JDK, ручной выбор или автоподбор, «Проверить» (`java -version`), «Скачать нужную Java» | `instance.json` |
 | 🧩 Моды и паки | ресурспаки: вкл/выкл и порядок ▲▼, каталог модов, вкл/выкл мода без удаления (`.jar.disabled`), папки mods / resourcepacks / shaderpacks / saves | `options.txt`, папка mods |
-| 💾 Пресеты | экспорт/импорт «моих настроек» (`.frogpreset.json`), «Сбросить до рекомендуемых», «Сбросить всё» | файл пресета |
+| 💾 Пресеты | экспорт/импорт «моих настроек» (`.ribbixpreset.json`), «Сбросить до рекомендуемых», «Сбросить всё» | файл пресета |
 
 `options.txt` правится бережно: неизвестные ключи (в т.ч. модов) и порядок строк сохраняются, у 1.19+ значения
 в кавычках (`renderClouds:"true"`) остаются в кавычках. Сканер железа читает ОЗУ, процессор, видеокарты и их память
@@ -381,13 +442,13 @@ Minecraft: достижения (без рецептов), км пешком, п
 Серверные файлы (`env.client = unsupported`) пропускаются, пути с `../` отклоняются. Сборка занимает слот лимита версий;
 если установка оборвалась — недокачанная версия удаляется.
 
-### Вход в FrogNews без сервера
+### Вход в Ribbix News без сервера
 
-В `FrogNews.settings.json` рядом с `FrogNews.exe` можно задать локальные учётки (`LocalStaff`): логин, роль и
+В `RibbixNews.settings.json` рядом с `RibbixNews.exe` можно задать локальные учётки (`LocalStaff`): логин, роль и
 **PBKDF2-SHA256 хэш** пароля (открытого пароля нет ни в файле, ни в exe). Такой вход работает без backend; раздел
 «Подписки» при этом только сообщает, что сервер недоступен (в режиме ролей Discord он и не нужен). Если backend доступен —
-FrogNews в фоне получит и service-токен. Файл с вашими учётками в git не попадает (`.gitignore`), шаблон —
-`FrogNews.settings.example.json`.
+Ribbix News в фоне получит и service-токен. Файл с вашими учётками в git не попадает (`.gitignore`), шаблон —
+`RibbixNews.settings.example.json`.
 
 ### Каталог модов
 
@@ -401,10 +462,10 @@ FrogNews в фоне получит и service-токен. Файл с ваши�
 
 ### Тариф по ролям Discord — без своего сервера (по умолчанию)
 
-`SubscriptionSource: "discord"`. Backend и FrogNews для подписок **не нужны**: тариф определяется ролью игрока на вашем Discord-сервере.
+`SubscriptionSource: "discord"`. Backend и Ribbix News для подписок **не нужны**: тариф определяется ролью игрока на вашем Discord-сервере.
 
 1. Игрок жмёт «Оформить» → заказ копируется, открывается https://discord.gg/u6zJZ7BzU5 → тикет → оплата.
-2. Модератор выдаёт игроку роль (Froglet, Frog+, …). Снять роль — тариф снимается.
+2. Модератор выдаёт игроку роль (Ribbix Lite, Ribbix+, …). Снять роль — тариф снимается.
 3. Игрок в лаунчере: «Профиль» → **«Войти через Discord»** (один раз) → «Подписка» → «⟳ Обновить».
    Дальше лаунчер сам проверяет роли при запуске и раз в 6 часов; без сети работает по кэшу до 7 дней.
 
@@ -416,10 +477,10 @@ FrogNews в фоне получит и service-токен. Файл с ваши�
 ```json
 "DiscordGuildId": "ID сервера (ПКМ по серверу → Копировать ID сервера)",
 "DiscordRoles": {
-  "ID роли Froglet":     "froglet",
-  "ID роли Frog+":       "frog_plus",
-  "ID роли Frog Pro":    "frog_pro",
-  "ID роли Frog Legend": "frog_legend",
+  "ID роли Ribbix Lite":     "ribbix_lite",
+  "ID роли Ribbix+":       "ribbix_plus",
+  "ID роли Ribbix Pro":    "ribbix_pro",
+  "ID роли Ribbix Legend": "ribbix_legend",
   "ID роли админов":     "admin"
 }
 ```
@@ -428,19 +489,19 @@ ID роли: Настройки сервера → Роли → ПКМ по ро
 
 > Честно о безопасности: без своего сервера проверка ролей выполняется на компьютере игрока — опытный пользователь
 > может её обойти (как и любую локальную проверку). Для косметических функций лаунчера это приемлемо;
-> если нужна защита платных серверных функций (облачные бэкапы и т.п.) — используйте режим `server` с Frog.Api.
+> если нужна защита платных серверных функций (облачные бэкапы и т.п.) — используйте режим `server` с Ribbix.Api.
 
-### Через свой сервер и FrogNews (`SubscriptionSource: "server"`)
+### Через свой сервер и Ribbix News (`SubscriptionSource: "server"`)
 
-Тикет в Discord — так же, но тариф выдаёт сотрудник в FrogNews:
+Тикет в Discord — так же, но тариф выдаёт сотрудник в Ribbix News:
 
-1. Игрок жмёт «Оформить» на карточке → в буфер копируется заказ (аккаунт FrogLauncher, игровой ник, тариф, период, сумма)
+1. Игрок жмёт «Оформить» на карточке → в буфер копируется заказ (аккаунт Ribbix, игровой ник, тариф, период, сумма)
    и открывается https://discord.gg/u6zJZ7BzU5.
 2. Игрок создаёт тикет, вставляет заказ и оплачивает удобным вам способом.
-3. Сотрудник с ролью `superadmin` открывает FrogNews → «Подписки» → находит ник → **«Выдать подписку»**
+3. Сотрудник с ролью `superadmin` открывает Ribbix News → «Подписки» → находит ник → **«Выдать подписку»**
    → тариф, месяц/год, номер тикета. Повторная выдача продлевает срок, снятие — «Снять подписку» (возврат).
 4. Лаунчер подхватит тариф при «⟳ Обновить» или автоматически (раз в 6 часов). Чтобы тариф было к чему привязать,
-   игрок должен зарегистрировать аккаунт FrogLauncher в «Профиле» (это нужно и backend'у: `ApiBaseUrl`).
+   игрок должен зарегистрировать аккаунт Ribbix в «Профиле» (это нужно и backend'у: `ApiBaseUrl`).
 
 API: `POST /admin/subscriptions/grant {user_id, tier_slug, period, reason}`, `POST /admin/subscriptions/revoke {user_id, reason}`.
 В аудите и CSV видно, кто, кому, какой тариф и по какому тикету выдал. Сумма по прайсу попадает в историю платежей пользователя.
@@ -448,13 +509,13 @@ API: `POST /admin/subscriptions/grant {user_id, tier_slug, period, reason}`, `PO
 ### Онлайн-оплата (`PurchaseMode=checkout`)
 
 Деньги считает только сервер. Лаунчер получает `payment_url` из `POST /billing/checkout` и открывает его в браузере.
-После оплаты страница `GET /billing/return` перенаправляет на `froglauncher://billing/success?sub_id=…`.
+После оплаты страница `GET /billing/return` перенаправляет на `ribbix://billing/success?sub_id=…`.
 Лаунчер опрашивает `/entitlements` до 60 секунд и показывает «Подписка активирована 🐸».
 
 ### YooKassa (Россия)
 
 1. Личный кабинет → Интеграция → HTTP-уведомления → URL:
-   `https://api.froglauncher.example/billing/webhook/yookassa?token=<YooKassa:WebhookSecret>`
+   `https://api.ribbix.example/billing/webhook/yookassa?token=<YooKassa:WebhookSecret>`
    События: `payment.succeeded`, `payment.canceled`.
 2. Включите **автоплатежи** (сохранение карты) в договоре с YooKassa — без этого рекуррентные списания недоступны.
 3. Продления списывает сам backend: воркер за 24 часа до конца периода делает платёж по `payment_method_id`.
@@ -469,7 +530,7 @@ API: `POST /admin/subscriptions/grant {user_id, tier_slug, period, reason}`, `PO
 
 1. Создайте Products/Prices для каждого тира и периода и пропишите `Paddle:Prices:{tier}:{month|year}`.
 2. Checkout settings → **Default payment link** (без него Paddle не выдаёт `checkout.url`).
-3. Notifications → новый destination: `https://api.froglauncher.example/billing/webhook/paddle`, события
+3. Notifications → новый destination: `https://api.ribbix.example/billing/webhook/paddle`, события
    `transaction.completed`, `transaction.payment_failed`, `subscription.created/updated/activated/past_due/canceled`.
    Secret key → `Paddle:WebhookSecret`.
 4. Подпись `Paddle-Signature` (HMAC-SHA256 от `ts:body`) проверяется обязательно, старше 5 минут — отклоняется.

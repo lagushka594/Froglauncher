@@ -4,7 +4,7 @@
 """
 import io, json, os, re, sys
 
-LANG = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'FrogLauncher', 'Lang')
+LANG = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'RibbixLauncher', 'Lang')
 HOLE = re.compile(r'(?<!\{)\{(\d+)(?:,[^}:]+)?(?::([^}]*))?\}(?!\})')
 
 ru = json.load(io.open(os.path.join(LANG, 'ru.json'), encoding='utf-8'))

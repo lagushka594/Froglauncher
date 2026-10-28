@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    RibbixLauncher — WPF (.NET 8).
+    Почему WPF, а не Avalonia: лаунчер завязан на Windows (DPAPI, реестр для поиска Java и
+    URL-схемы ribbix://, Win32 процессы), RibbixNews уже на WPF — общие стили, навыки и
+    инструменты команды. Avalonia имеет смысл, только когда понадобятся macOS/Linux.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <!-- WinForms только ради NotifyIcon (трей); его глобальные using отключены, чтобы не путать с WPF. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- DPI задаётся в app.manifest — так же, как до трея (WinForms нужен только для NotifyIcon). -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+    <AssemblyName>RibbixLauncher</AssemblyName>
+    <RootNamespace>RibbixLauncher</RootNamespace>
+    <ApplicationIcon>..\..\assets\out\ui\icon_frog.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="DnsClient" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ribbix.Shared\Ribbix.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="RibbixLauncher.Tests" />
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <!-- Ассеты, нарезанные из атласов (tools/AssetCutter), вшиваются как WPF-ресурсы. -->
+  <ItemGroup>
+    <Resource Include="..\..\assets\out\**\*.png" Exclude="..\..\assets\out\_contact_sheet.png"
+              Link="Assets\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Resource Include="..\..\assets\out\ui\icon_frog.ico" Link="Assets\ui\icon_frog.ico" />
+  </ItemGroup>
+
+  <!-- Тот же tiers.json, что на сервере: карточки тарифов видны, даже когда сервер недоступен. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Ribbix.Api\tiers.json" LogicalName="RibbixLauncher.tiers.json" />
+    <!-- Резервная копия списка серверов (основной — servers.json в репозитории на GitHub). -->
+    <EmbeddedResource Include="..\..\servers.json" LogicalName="RibbixLauncher.servers.json" />
+    <EmbeddedResource Include="..\..\promos.json" LogicalName="RibbixLauncher.promos.json" />
+    <!-- Java-агент замера FPS (исходник и сборка — tools/RibbixFpsAgent). -->
+    <EmbeddedResource Include="..\..\tools\RibbixFpsAgent\ribbix-fps-agent.jar" LogicalName="RibbixLauncher.ribbix-fps-agent.jar" />
+    <!-- Словари локализации: ключ — русская строка (Lang/ru.json — исходник для Crowdin). -->
+    <EmbeddedResource Include="Lang\*.json" Exclude="Lang\ru.json" LogicalName="RibbixLauncher.Lang.%(Filename).json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+</Project>

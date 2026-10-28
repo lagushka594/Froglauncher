@@ -1,6 +1,6 @@
 # Промо «Мод в один клик» (сценарий 5)
 
-9:16, 1080×1920, 30 fps, 25 с. Итог: `out/froglauncher_mods_9x16.mp4`.
+9:16, 1080×1920, 30 fps, 25 с. Итог: `out/ribbix_mods_9x16.mp4`.
 
 Мокап вкладки «🧩 Моды» (`Views/InstancesView.xaml`): поиск по Modrinth, «Установить» → «✓ Установлен»,
 обязательные зависимости ставятся сами (`ModrinthService.InstallRecursiveAsync`), тост как в `PageViewModels.InstallModAsync`.
@@ -17,7 +17,7 @@
 python tts_neural.py
 python render.py
 python mix.py
-ffmpeg -i out/video_noaudio.mp4 -i out/audio_mix.wav -af loudnorm=I=-14:TP=-1.5 -c:v copy -c:a aac -b:a 192k -shortest out/froglauncher_mods_9x16.mp4
+ffmpeg -i out/video_noaudio.mp4 -i out/audio_mix.wav -af loudnorm=I=-14:TP=-1.5 -c:v copy -c:a aac -b:a 192k -shortest out/ribbix_mods_9x16.mp4
 ```
 
 Тайминг (сдвинут под озвучку): 0–3.75 крючок · 3.75 поиск · 9.75 зависимости · 17.25 запуск · 22.35–25 CTA.

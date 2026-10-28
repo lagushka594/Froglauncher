@@ -1,0 +1,146 @@
+<UserControl x:Class="RibbixLauncher.Views.ServersView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="clr-namespace:RibbixLauncher.Core"
+             xmlns:v="clr-namespace:RibbixLauncher.Views"
+             Style="{StaticResource Page}">
+    <UserControl.Resources>
+        <v:VisibleIfConverter x:Key="VisibleIf" />
+    </UserControl.Resources>
+
+    <Border Style="{StaticResource Card}">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Style="{StaticResource GhostButton}" Content="{l:T '+ Свой сервер'}" Command="{Binding ToggleAddCommand}" Margin="0,0,8,0" />
+                        <Button Style="{StaticResource GhostButton}" Content="{l:T '⟳ Обновить'}" Command="{Binding RefreshCommand}" />
+                    </StackPanel>
+                    <Image Source="/Assets/ui/biome_icon.png" Height="44" Margin="0,0,12,0" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{l:T 'Серверы'}" Style="{StaticResource H1}" />
+                        <TextBlock Style="{StaticResource Muted}" Text="{l:T 'Живой онлайн и пинг. «Играть» запускает игру и сразу подключает к серверу.'}" />
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Свой сервер -->
+                <Border CornerRadius="10" Padding="12" Margin="0,12,0,0" Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1"
+                        Visibility="{Binding ShowAdd, Converter={StaticResource VisibleIf}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="200" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox Text="{Binding NewServerName, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:T 'Название (необязательно)'}" AutomationProperties.Name="Название сервера" />
+                        <TextBox Grid.Column="1" Text="{Binding NewServerAddress, UpdateSourceTrigger=PropertyChanged}" Margin="8,0,0,0"
+                                 ToolTip="{l:T 'Адрес: play.example.com или 1.2.3.4:25565'}" AutomationProperties.Name="Адрес сервера" />
+                        <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="{l:T 'Добавить'}" Command="{Binding AddServerCommand}" Margin="8,0,0,0" />
+                    </Grid>
+                </Border>
+
+                <!-- Фильтры -->
+                <Grid Margin="0,12,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="150" />
+                        <ColumnDefinition Width="140" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}" ToolTip="{l:T 'Название, адрес, режим или версия'}" AutomationProperties.Name="Поиск серверов" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Tags}" SelectedItem="{Binding SelectedTag}" Margin="8,0,0,0" MaxDropDownHeight="300" />
+                    <ComboBox Grid.Column="2" ItemsSource="{Binding Regions}" SelectedItem="{Binding SelectedRegion}" Margin="8,0,0,0" />
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <CheckBox Style="{StaticResource Check}" Content="{l:T '★ Избранные'}" IsChecked="{Binding FavoritesOnly}" Margin="0,0,12,0" />
+                        <CheckBox Style="{StaticResource Check}" Content="{l:T 'Онлайн'}" IsChecked="{Binding OnlineOnly}" />
+                    </StackPanel>
+                </Grid>
+
+                <DockPanel Margin="0,10,0,0">
+                    <TextBlock Text="{l:T 'Запускать на версии:'}" Style="{StaticResource Muted}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <ComboBox ItemsSource="{Binding Instances}" SelectedItem="{Binding PlayInstance}" Width="320" HorizontalAlignment="Left">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock><Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="  " /><Run Text="{Binding DisplayVersion, Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" /></TextBlock>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <StackPanel Orientation="Horizontal" Margin="12,0,0,0" Visibility="{Binding IsRefreshing, Converter={StaticResource VisibleIf}}">
+                        <Image Source="/Assets/ui/loader.png" Height="20" Style="{StaticResource Spinning}" />
+                        <TextBlock Text="{l:T '  Опрашиваем серверы…'}" Style="{StaticResource Muted}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </DockPanel>
+            </StackPanel>
+
+            <ScrollViewer Margin="0,12,0,0" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <ItemsControl ItemsSource="{Binding Servers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="12" Padding="10" Margin="0,4" Background="#10FFFFFF">
+                                    <DockPanel>
+                                        <!-- Действия -->
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
+                                            <StackPanel Margin="0,0,14,0" VerticalAlignment="Center" MinWidth="110">
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                    <Ellipse Width="9" Height="9" Margin="0,0,6,0" VerticalAlignment="Center">
+                                                        <Ellipse.Style>
+                                                            <Style TargetType="Ellipse">
+                                                                <Setter Property="Fill" Value="#EF4444" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsOnline}" Value="True"><Setter Property="Fill" Value="#22C55E" /></DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Ellipse.Style>
+                                                    </Ellipse>
+                                                    <TextBlock Text="{Binding OnlineText}" FontWeight="SemiBold" />
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding PingText}" Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Right" />
+                                            </StackPanel>
+                                            <Button Content="★" Padding="10,6" Margin="0,0,6,0" ToolTip="{l:T 'В избранное'}"
+                                                    Command="{Binding DataContext.ToggleFavoriteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                                <Setter Property="Foreground" Value="#FACC15" />
+                                                                <Setter Property="BorderBrush" Value="#FACC15" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
+                                            <Button Style="{StaticResource GhostButton}" Content="✕" Padding="10,6" Margin="0,0,6,0" ToolTip="{l:T 'Убрать свой сервер'}"
+                                                    Command="{Binding DataContext.RemoveCustomCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                                    Visibility="{Binding Entry.Custom, Converter={StaticResource VisibleIf}}" />
+                                            <Button Style="{StaticResource AccentButton}" Content="{l:T '▶ Играть'}" Padding="16,7"
+                                                    Command="{Binding DataContext.PlayCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                        </StackPanel>
+
+                                        <!-- Иконка сервера (64×64 из ответа сервера) -->
+                                        <Border DockPanel.Dock="Left" Width="52" Height="52" CornerRadius="8" Margin="0,0,12,0" Background="#22FFFFFF" ClipToBounds="True">
+                                            <Image Source="{Binding Icon, TargetNullValue=/Assets/ui/item_block.png}" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock FontSize="15" FontWeight="SemiBold">
+                                                <Run Text="{Binding Name, Mode=OneWay}" />
+                                                <Run Text="{Binding Entry.Region, Mode=OneWay}" Foreground="{DynamicResource Accent2Brush}" FontSize="11" FontWeight="Normal" />
+                                                <Run Text="{Binding VersionText, Mode=OneWay}" Foreground="{DynamicResource MutedBrush}" FontSize="11" FontWeight="Normal" />
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding Motd}" Style="{StaticResource Muted}" FontSize="12" TextTrimming="CharacterEllipsis" MaxHeight="34" />
+                                            <TextBlock Style="{StaticResource Muted}" FontSize="11">
+                                                <Run Text="{Binding Address, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding TagsText, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Style="{StaticResource Muted}" FontSize="11" HorizontalAlignment="Center" Margin="0,8"
+                               Text="{l:T 'Серверы не связаны с Ribbix. Список обновляется из репозитория проекта на GitHub.'}" />
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

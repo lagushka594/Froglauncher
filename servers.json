@@ -1,7 +1,7 @@
 {
   "format": 1,
   "updated": "2026-10-27",
-  "note": "Список серверов для вкладки «Серверы». Лаунчер берёт его с GitHub (main), без сети — встроенную копию. Онлайн, версия и пинг — живые, через Server List Ping. Серверы не связаны с FrogLauncher.",
+  "note": "Список серверов для вкладки «Серверы». Лаунчер берёт его с GitHub (main), без сети — встроенную копию. Онлайн, версия и пинг — живые, через Server List Ping. Серверы не связаны с Ribbix.",
   "servers": [
     { "name": "Hypixel", "address": "mc.hypixel.net", "region": "Global", "tags": ["мини-игры", "bedwars", "skyblock", "pvp"], "description": "Крупнейший сервер мини-игр: BedWars, SkyBlock, SkyWars, Murder Mystery." },
     { "name": "CubeCraft", "address": "play.cubecraft.net", "region": "EU", "tags": ["мини-игры", "bedwars", "skyblock"], "description": "Мини-игры и SkyBlock, европейский сервер." },

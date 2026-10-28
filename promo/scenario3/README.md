@@ -1,6 +1,6 @@
 # Промо «Настройки MC прямо в лаунчере» (сценарий 3)
 
-9:16, 1080×1920, 30 fps, 30 с. Итог: `out/froglauncher_settings_9x16.mp4`.
+9:16, 1080×1920, 30 fps, 30 с. Итог: `out/ribbix_settings_9x16.mp4`.
 
 | Файл | Что делает |
 |---|---|
@@ -15,7 +15,7 @@
 python tts_neural.py                      # озвучка → audio/vt_N.wav (уже с обрезкой тишины)
 python render.py                           # видео
 python mix.py                              # звук
-ffmpeg -i out/video_noaudio.mp4 -i out/audio_mix.wav -af loudnorm=I=-14:TP=-1.5 -c:v copy -c:a aac -b:a 192k -shortest out/froglauncher_settings_9x16.mp4
+ffmpeg -i out/video_noaudio.mp4 -i out/audio_mix.wav -af loudnorm=I=-14:TP=-1.5 -c:v copy -c:a aac -b:a 192k -shortest out/ribbix_settings_9x16.mp4
 ```
 
 Обрезка тишины: `ffmpeg -i vo_N.wav -af "silenceremove=start_periods=1:start_threshold=-45dB,areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse" -ar 48000 -ac 1 vt_N.wav`

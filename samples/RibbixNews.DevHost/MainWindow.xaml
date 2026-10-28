@@ -1,0 +1,28 @@
+<Window x:Class="RibbixNews.DevHost.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Ribbix News" Width="1100" Height="700" Background="#0F172A" FontFamily="Segoe UI" FontSize="14"
+        WindowStartupLocation="CenterScreen">
+    <DockPanel>
+        <!-- Меню как в RibbixNews: «Подписки» видно только superadmin. -->
+        <Menu DockPanel.Dock="Top" Background="#1E293B" Foreground="White" Padding="6,4">
+            <MenuItem Header="Новости" Foreground="White" />
+            <MenuItem x:Name="SubscriptionsMenu" Header="👑 Подписки" Foreground="White" Visibility="Collapsed" Click="Subscriptions_Click" />
+            <MenuItem x:Name="LogoutMenu" Header="Выйти" Foreground="White" Visibility="Collapsed" Click="Logout_Click" />
+        </Menu>
+        <Grid>
+            <ContentControl x:Name="Host" />
+            <Border x:Name="LoginPanel" Width="360" VerticalAlignment="Center" Background="#111C33" CornerRadius="12" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Вход в Ribbix News" Foreground="White" FontSize="20" FontWeight="Bold" />
+                    <TextBlock Text="Логин" Foreground="#94A3B8" Margin="0,12,0,4" />
+                    <TextBox x:Name="LoginBox" Padding="6" AutomationProperties.Name="Логин" />
+                    <TextBlock Text="Пароль" Foreground="#94A3B8" Margin="0,10,0,4" />
+                    <PasswordBox x:Name="PasswordBox" Padding="6" AutomationProperties.Name="Пароль" />
+                    <Button Content="Войти" Margin="0,14,0,0" Padding="8" Click="Login_Click" IsDefault="True" />
+                    <TextBlock x:Name="LoginError" Foreground="#FCA5A5" TextWrapping="Wrap" Margin="0,10,0,0" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>

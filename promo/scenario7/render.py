@@ -2,7 +2,7 @@
 
 Мокап «Профиль → 📊 Статистика» (Views/ProfileView.xaml, ViewModels/ImmersionViewModels.StatsViewModel):
 бейдж с прогрессом «До «Легенда» 👑 осталось …», плитки, график за 14 дней, «В мирах Minecraft», «Любимые версии».
-Пороги бейджей — PlayStatsService.Badges. Список достижений с прогрессом (сцена 3) в лаунчере пока нет — это мокап.
+Пороги бейджей — PlayStatsService.Badges. Список достижений с прогрессом — ниже на той же странице (README, v2.2).
 Запуск:  python render.py [out.mp4] [--only 2.0,12.0]
 """
 import math
@@ -68,7 +68,7 @@ def profile(t, st):
     img.alpha_composite(bg, (0, 0))
     d.rectangle([0, 0, CW, 110], fill=(11, 18, 32, 150))
     img.alpha_composite(asset("ui/icon_frog.png", 0.58), (24, 14))
-    d.text((100, 26), "FrogLauncher", font=uib(38), fill=TEXT)
+    d.text((100, 26), "RibbixLauncher", font=uib(38), fill=TEXT)
     d.text((CW - 30, 40), "Профиль · Kvakusha", font=ui(26), fill=MUTED, anchor="ra")
     x = 28
     for i, tab in enumerate(["👤 Аккаунты", "📊 Статистика", "🖼️ Скриншоты"]):
@@ -341,7 +341,7 @@ def cta(t):
     f.alpha_composite(lgs, (round(W / 2 - lgs.width / 2), round(700 - lgs.height / 2)))
     title_emoji(f, "А ТЫ СКОЛЬКО\nНАИГРАЛ?", "👇", t, S6 + 0.25, 1220, 110)
     if lt > 0.4:
-        d.text((W / 2, 1420), "@froglauncher", font=uib(60), fill=(6, 40, 18), anchor="ma")
+        d.text((W / 2, 1420), "@ribbix", font=uib(60), fill=(6, 40, 18), anchor="ma")
     if lt > 0.8:
         d.text((W / 2 - 60, 1540 + abs(math.sin(lt * 6)) * 40), "👇", font=emo(110), embedded_color=True)
     return f

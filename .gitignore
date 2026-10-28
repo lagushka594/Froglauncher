@@ -4,8 +4,8 @@ artifacts/
 .vs/
 *.user
 appsettings.Development.json
-src/FrogLauncher.Installer/Payload/payload.zip
+src/RibbixLauncher.Installer/Payload/payload.zip
 assets/out/_contact_sheet.png
-src/FrogLauncher.Installer/Payload/uninstall.exe
-src/FrogLauncher.Installer/Payload/uninstall.exe
-samples/FrogNews.DevHost/FrogNews.settings.json
+src/RibbixLauncher.Installer/Payload/uninstall.exe
+src/RibbixLauncher.Installer/Payload/uninstall.exe
+samples/RibbixNews.DevHost/RibbixNews.settings.json

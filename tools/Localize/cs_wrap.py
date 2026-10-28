@@ -6,7 +6,7 @@
 """
 import glob, io, json, os, re, sys
 
-ROOT = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'FrogLauncher')
+ROOT = os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'RibbixLauncher')
 DIRS = ['ViewModels', 'Views', 'Services', 'Models', 'Core']
 SKIP_FILES = {'Localization.cs'}
 CYR = re.compile('[А-Яа-яЁё]')
@@ -164,8 +164,8 @@ for d in DIRS:
             out.append(c); i += 1
         new = ''.join(out)
         if edits and new != src:
-            if 'using FrogLauncher.Core;' not in new and not re.search(r'namespace FrogLauncher\.Core\b', new):
-                new = 'using FrogLauncher.Core;\n' + new
+            if 'using RibbixLauncher.Core;' not in new and not re.search(r'namespace RibbixLauncher\.Core\b', new):
+                new = 'using RibbixLauncher.Core;\n' + new
             changed += 1
             if not DRY: io.open(f, 'w', encoding='utf-8').write(new)
 

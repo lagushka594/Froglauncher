@@ -195,7 +195,7 @@ def hero_base(season):
     return im.convert("RGBA")
 
 
-FROG_POS = (HERO_W - 300, HERO_H - 170)  # где сидит лягушка (верх-лево спрайта)
+RIBBIX_POS = (HERO_W - 300, HERO_H - 170)  # где сидит лягушка (верх-лево спрайта)
 TREE_X = 46 * PX
 
 
@@ -221,7 +221,7 @@ def window_static(season):
     img = Image.new("RGBA", (CW, CH), bg + (255,))
     d = ImageDraw.Draw(img)
     img.alpha_composite(asset("ui/icon_frog.png", 0.58), (24, 18))
-    d.text((100, 30), "FrogLauncher", font=uib(38), fill=TEXT)
+    d.text((100, 30), "RibbixLauncher", font=uib(38), fill=TEXT)
     # чип темы
     f = uib(28)
     e, rest = name.split(" ", 1)
@@ -269,8 +269,8 @@ def window(season, t):
     hx0 = 28 - (HERO_W - (CW - 56)) // 2
     # лягушка на кувшинке, лёгкое покачивание
     frog = asset("ui/frog_idle.png" if season == "winter" else "ui/frog_happy.png", 2.4)
-    fx = hx0 + FROG_POS[0]
-    fy = HERO_Y + FROG_POS[1] - 30 + round(math.sin(t * 2.2) * 4)
+    fx = hx0 + RIBBIX_POS[0]
+    fy = HERO_Y + RIBBIX_POS[1] - 30 + round(math.sin(t * 2.2) * 4)
     img.alpha_composite(frog, (fx, fy))
     if season == "newyear":
         santa_hat(img, fx + 38, fy + 6, 0.95)
@@ -503,12 +503,12 @@ def cta(t, base):
         lgs = lg.resize((max(1, round(lg.width * s)), max(1, round(lg.height * s))), Image.LANCZOS)
         lgs.putalpha(lgs.getchannel("A").point(lambda v: round(v * clamp(k))))
         f.alpha_composite(lgs, (round(W / 2 - lgs.width / 2), round(700 - lgs.height / 2)))
-    put_title(f, "🐸 FrogLauncher", t, T_CTA + 0.2, 1110, 84, dur=0.4)
+    put_title(f, "🐸 RibbixLauncher", t, T_CTA + 0.2, 1110, 84, dur=0.4)
     put_title(f, "4 СЕЗОНА + НГ", t, T_CTA + 0.4, 1230, 96, (253, 224, 71), dur=0.4)
     put_title(f, "👇 Ссылка в профиле", t, T_CTA + 0.6, 1360, 64, dur=0.4)
     if lt > 0.5:
         d = ImageDraw.Draw(f)
-        d.text((W / 2, 1460), "@froglauncher", font=uib(50), fill=(255, 255, 255), anchor="ma")
+        d.text((W / 2, 1460), "@ribbix", font=uib(50), fill=(255, 255, 255), anchor="ma")
         bob = abs(math.sin(lt * 5)) * 30
         d.text((W / 2 - 55, 1560 + bob), "👇", font=emo(100), embedded_color=True)
     return f

@@ -8,6 +8,6 @@
     <SelfContained>false</SelfContained>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FrogLauncher\FrogLauncher.csproj" />
+    <ProjectReference Include="..\..\src\RibbixLauncher\RibbixLauncher.csproj" />
   </ItemGroup>
 </Project>
