@@ -1,0 +1,28 @@
+# Коммиты в main и релизы → Discord.
+# Секреты: DISCORD_COMMITS_WEBHOOK_URL (коммиты), DISCORD_RELEASES_WEBHOOK_URL (релизы); без них — DISCORD_WEBHOOK_URL.
+# Переменная репозитория PING_EVERYONE=1 — упоминать @everyone о новых релизах.
+name: Обновления в Discord
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Отправить в Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_COMMITS_WEBHOOK_URL: ${{ secrets.DISCORD_COMMITS_WEBHOOK_URL }}
+          DISCORD_RELEASES_WEBHOOK_URL: ${{ secrets.DISCORD_RELEASES_WEBHOOK_URL }}
+          PING_EVERYONE: ${{ vars.PING_EVERYONE }}
+        run: python tools/social-notify/updates.py
