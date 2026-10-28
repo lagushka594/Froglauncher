@@ -311,7 +311,12 @@ public partial class MainViewModel : ObservableObject, IRecipient<NavigateMessag
     public void HandleDeepLink(Uri uri)
     {
         _log.LogInformation("Deeplink {Host}{Path}", uri.Host, uri.AbsolutePath);
-        if (FriendLinkService.Parse(uri) is { } invite)
+        if (uri.Host == "pack" && UrlScheme.Query(uri, "gist") is { } gist && SharedPackService.IsGistId(gist))
+        {
+            SelectedPage = Page.Home;
+            _ = ((HomeViewModel)_pages[Page.Home]).JoinSharedPackAsync(gist);
+        }
+        else if (FriendLinkService.Parse(uri) is { } invite)
         {
             SelectedPage = Page.Home;
             _ = ((HomeViewModel)_pages[Page.Home]).JoinFriendAsync(invite);

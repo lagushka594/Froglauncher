@@ -32,6 +32,7 @@ public partial class InstancesViewModel(
     GameAuthService accounts,
     Lazy<ModpacksViewModel> catalog,
     OptimizeService optimizer,
+    SharedPackService shared,
     ILogger<InstancesViewModel> log) : ObservableObject, IPageActivated, IRefreshable
 {
     /// <summary>Каталог Modrinth сразу для этой версии: моды, ресурспаки, шейдеры, датапаки.</summary>
@@ -494,7 +495,7 @@ public partial class InstancesViewModel(
     {
         SettingsPanel = value is null ? null : new InstanceSettingsViewModel(value, instances, java, entitlements, toasts,
             new WorldsViewModel(value, worlds, launcher, toasts), transfer, friends,
-            playStats.Load().Sessions.LastOrDefault(s => s.InstanceId == value.Id && s.Server is not null)?.Server, bench, accounts);
+            playStats.Load().Sessions.LastOrDefault(s => s.InstanceId == value.Id && s.Server is not null)?.Server, bench, accounts, shared);
         ShowModCatalog = false;
         ModResults.Clear();
         OnPropertyChanged(nameof(SelectedHasLoader));
@@ -685,15 +686,18 @@ public partial class ProfileViewModel(
     ToastService toasts,
     StatsViewModel stats,
     ScreenshotsViewModel screenshots,
-    YearRecapViewModel recap) : ObservableObject, IPageActivated
+    YearRecapViewModel recap,
+    ClipsViewModel clips) : ObservableObject, IPageActivated
 {
+    public ClipsViewModel Clips { get; } = clips;
+    public const int ClipsTab = 4;
     public StatsViewModel Stats { get; } = stats;
     public ScreenshotsViewModel Screenshots { get; } = screenshots;
     public YearRecapViewModel Recap { get; } = recap;
 
     public const int RecapTab = 3;
 
-    /// <summary>0 — аккаунты, 1 — статистика, 2 — скриншоты, 3 — «Мой год» (грузятся при открытии вкладки).</summary>
+    /// <summary>0 — аккаунты, 1 — статистика, 2 — скриншоты, 3 — «Мой год», 4 — клипы (грузятся при открытии вкладки).</summary>
     [ObservableProperty] private int _tab;
 
     partial void OnTabChanged(int value) => LoadTab();
@@ -703,6 +707,7 @@ public partial class ProfileViewModel(
         if (Tab == 1) Stats.Load();
         else if (Tab == 2) _ = Screenshots.LoadAsync();
         else if (Tab == RecapTab) Recap.Load();
+        else if (Tab == ClipsTab) Clips.Load();
     }
 
     private CancellationTokenSource? _msCts;

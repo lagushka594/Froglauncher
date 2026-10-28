@@ -123,13 +123,32 @@ public sealed partial class FriendLinkService(IHttpClientFactory httpFactory, Do
     /// <summary>Уже есть версия из этой же ссылки — используем её, иначе создаём новую.</summary>
     public Instance? Existing(FriendInvite invite) => instances.List().FirstOrDefault(i => i.ShareKey == invite.Key);
 
-    public async Task<Instance> InstallAsync(FriendInvite invite, int ramMb, IProgress<DownloadProgress>? progress, CancellationToken ct)
+    public async Task<Instance> InstallAsync(FriendInvite invite, int ramMb, IProgress<DownloadProgress>? progress, CancellationToken ct) =>
+        (await InstallWithFilesAsync(invite, ramMb, progress, ct)).Instance;
+
+    public async Task<(Instance Instance, List<string> Files)> InstallWithFilesAsync(FriendInvite invite, int ramMb, IProgress<DownloadProgress>? progress, CancellationToken ct)
     {
         var inst = Existing(invite);
         var created = inst is null;
         inst ??= instances.Create(invite.Name, invite.GameVersion, invite.Loader, invite.LoaderVersion, ramMb);
         inst.ShareKey = invite.Key;
         try
+        {
+            var files = await DownloadIntoAsync(inst, invite, progress, ct);
+            instances.Save(inst);
+            log.LogInformation("Сборка друга {Name}: {Count} файлов в {Instance}", invite.Name, files.Count, inst.Id);
+            return (inst, files);
+        }
+        catch when (created)
+        {
+            instances.Delete(inst);
+            throw;
+        }
+    }
+
+    /// <summary>Загрузчик и файлы приглашения в существующую версию. Возвращает пути файлов относительно .minecraft.</summary>
+    public async Task<List<string>> DownloadIntoAsync(Instance inst, FriendInvite invite, IProgress<DownloadProgress>? progress, CancellationToken ct)
+    {
         {
             progress?.Report(DownloadProgress.Indeterminate(L.T("Устанавливаем Minecraft и загрузчик")));
             inst.LaunchVersionId = await loaders.InstallAsync(inst.Loader, inst.GameVersion, inst.LoaderVersion, progress, ct);
@@ -152,14 +171,7 @@ public sealed partial class FriendLinkService(IHttpClientFactory httpFactory, Do
                 }
             }
             await downloads.DownloadAsync(items, L.T("Скачиваем моды друга"), progress, ct);
-            instances.Save(inst);
-            log.LogInformation("Сборка друга {Name}: {Count} файлов в {Instance}", invite.Name, items.Count, inst.Id);
-            return inst;
-        }
-        catch when (created)
-        {
-            instances.Delete(inst);
-            throw;
+            return items.Select(i => Path.GetRelativePath(inst.GameDirectory, i.Path)).ToList();
         }
     }
 }

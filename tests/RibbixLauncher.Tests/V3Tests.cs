@@ -31,4 +31,32 @@ public class V3Tests
         Assert.Equal(a, QuestService.ForDay(day));
         Assert.Equal(3, a.Select(q => q.Kind).Distinct().Count());
     }
+
+    [Fact]
+    public void Clip_args_take_last_30s_vertical_with_logo()
+    {
+        var args = ClipService.BuildArgs(@"C:\in game.mp4", @"C:\out.mp4", @"C:\logo.png");
+        Assert.Equal("-30", args[args.IndexOf("-sseof") + 1]);
+        Assert.True(args.IndexOf("-sseof") < args.IndexOf("-i"), "-sseof должен идти перед входом");
+        Assert.Equal(@"C:\in game.mp4", args[args.IndexOf("-i") + 1]);
+        var filter = args[args.IndexOf("-filter_complex") + 1];
+        Assert.Contains("crop=1080:1920", filter);
+        Assert.Contains("[1:v]", filter);
+        Assert.EndsWith("[v]", filter);
+        Assert.Equal(@"C:\out.mp4", args[^1]);
+
+        var plain = ClipService.BuildArgs("a.mp4", "b.mp4", null);
+        Assert.DoesNotContain("[1:v]", plain[plain.IndexOf("-filter_complex") + 1]);
+        Assert.Single(plain, a => a == "-i");
+    }
+
+    [Fact]
+    public void Shared_pack_links()
+    {
+        Assert.True(SharedPackService.IsGistId("aa5a315d61ae9438b18d"));
+        Assert.True(SharedPackService.IsGistId("0123456789abcdef0123456789abcdef"));
+        Assert.False(SharedPackService.IsGistId("../../etc"));
+        Assert.False(SharedPackService.IsGistId(null));
+        Assert.Equal("ribbix://pack?gist=abc", SharedPackService.ShareLink("abc"));
+    }
 }

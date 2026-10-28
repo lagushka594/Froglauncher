@@ -587,3 +587,105 @@ public partial class WorldsViewModel(Instance inst, WorldService worlds, LaunchS
         if (w is not null) Shell.Open(Path.Combine(inst.GameDirectory, "saves", w.Info.Folder));
     }
 }
+
+
+public sealed partial class CaptureItem(Capture capture) : ObservableObject
+{
+    public Capture Capture { get; } = capture;
+    public string Caption => L.T($"{Capture.Taken:dd.MM.yyyy HH:mm} · {Capture.Size / 1048576.0:0.#} МБ");
+    public string Name => Path.GetFileNameWithoutExtension(Capture.Path);
+}
+
+/// <summary>«Профиль» → «Клипы»: запись Xbox Game Bar → вертикальный клип 1080×1920 для TikTok.</summary>
+public partial class ClipsViewModel(ClipService clips, ToastService toasts, ILogger<ClipsViewModel> log) : ObservableObject
+{
+    public ObservableCollection<CaptureItem> Items { get; } = new();
+    [ObservableProperty] private CaptureItem? _selected;
+    [ObservableProperty] private bool _isEmpty;
+    [ObservableProperty] private bool _isWorking;
+    [ObservableProperty] private double _percent;
+    [ObservableProperty] private string? _status;
+    [ObservableProperty] private string? _lastClip;
+
+    public bool HasFfmpeg => ClipService.HasFfmpeg;
+
+    public void Load()
+    {
+        Items.ReplaceWith(ClipService.List().Take(50).Select(c => new CaptureItem(c)));
+        IsEmpty = Items.Count == 0;
+        Selected ??= Items.FirstOrDefault();
+        OnPropertyChanged(nameof(HasFfmpeg));
+    }
+
+    [RelayCommand]
+    private void Refresh() => Load();
+
+    [RelayCommand]
+    private static void OpenGameBarSettings()
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:gaming-gamedvr") { UseShellExecute = true }); }
+        catch (System.ComponentModel.Win32Exception) { }
+    }
+
+    [RelayCommand]
+    private void OpenCaptures()
+    {
+        Directory.CreateDirectory(ClipService.CapturesDir);
+        Shell.Open(ClipService.CapturesDir);
+    }
+
+    [RelayCommand]
+    private void PickFile()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = L.T("Видео") + " (*.mp4)|*.mp4", InitialDirectory = ClipService.CapturesDir };
+        if (dlg.ShowDialog() != true) return;
+        var f = new FileInfo(dlg.FileName);
+        var item = new CaptureItem(new Capture(f.FullName, f.LastWriteTime, f.Length));
+        Items.Insert(0, item);
+        IsEmpty = false;
+        Selected = item;
+    }
+
+    [RelayCommand]
+    private async Task MakeAsync()
+    {
+        if (Selected is not { } item || IsWorking) return;
+        IsWorking = true;
+        LastClip = null;
+        try
+        {
+            if (!ClipService.HasFfmpeg)
+            {
+                if (MessageBox.Show(L.T("Для клипов нужен ffmpeg (~150 МБ, один раз). Скачать его с GitHub (сборка BtbN)?"),
+                        "Ribbix Launcher", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+                Status = L.T("Скачиваем ffmpeg…");
+                await clips.EnsureFfmpegAsync(new Progress<double>(p => Percent = p), CancellationToken.None);
+                OnPropertyChanged(nameof(HasFfmpeg));
+            }
+            Percent = 0;
+            Status = L.T("Монтируем клип…");
+            LastClip = await clips.MakeAsync(item.Capture, new Progress<double>(p => Percent = p), CancellationToken.None);
+            QuestService.MarkGlobal("clip");
+            toasts.Show(L.T("🎬 Клип готов! Файл — в «Изображения\\RibbixLauncher\\Клипы»"), ToastKind.Success, 6);
+            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{LastClip}\"");
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or System.Net.Http.HttpRequestException or TaskCanceledException
+                                       or System.ComponentModel.Win32Exception or InvalidDataException)
+        {
+            log.LogWarning(ex, "Клип не создан");
+            toasts.Show(L.T("Не удалось сделать клип: ") + ex.Message, ToastKind.Error, 7);
+        }
+        finally
+        {
+            IsWorking = false;
+            Status = null;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenTikTok()
+    {
+        Shell.Open("https://www.tiktok.com/upload");
+        if (LastClip is not null) System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{LastClip}\"");
+    }
+}

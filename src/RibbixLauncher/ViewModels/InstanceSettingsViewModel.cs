@@ -61,8 +61,11 @@ public partial class InstanceSettingsViewModel : ObservableObject
 
     public InstanceSettingsViewModel(Instance inst, InstanceService instances, JavaService java,
         EntitlementService entitlements, ToastService toasts, WorldsViewModel worlds, PackTransferService transfer,
-        FriendLinkService friends, string? lastServer, FpsBenchmarkService bench, GameAuthService accounts)
+        FriendLinkService friends, string? lastServer, FpsBenchmarkService bench, GameAuthService accounts, SharedPackService shared)
     {
+        _shared = shared;
+        HasGitHubToken = shared.HasToken;
+        SharedLink = inst.HostGist is { } g ? SharedPackService.ShareLink(g) : null;
         _bench = bench;
         _accounts = accounts;
         _friends = friends;
@@ -129,6 +132,55 @@ public partial class InstanceSettingsViewModel : ObservableObject
         finally
         {
             IsBenchmarking = false;
+        }
+    }
+
+    // ---------- Общая сборка (GitHub Gist) ----------
+    private readonly SharedPackService _shared;
+    [ObservableProperty] private bool _hasGitHubToken;
+    [ObservableProperty] private string? _sharedLink;
+    [ObservableProperty] private bool _isSharing;
+
+    [RelayCommand]
+    private void SaveGitHubToken(System.Windows.Controls.PasswordBox? box)
+    {
+        if (box is null) return;
+        try
+        {
+            _shared.SaveToken(box.Password);
+            box.Clear();
+            HasGitHubToken = true;
+            _toasts.Show(L.T("Токен сохранён (зашифрован на этом ПК)"), ToastKind.Success);
+        }
+        catch (InvalidOperationException ex) { _toasts.Show(ex.Message, ToastKind.Error, 6); }
+    }
+
+    [RelayCommand]
+    private static void OpenTokenPage() => Shell.Open(SharedPackService.TokenPage);
+
+    [RelayCommand]
+    private void ForgetGitHubToken()
+    {
+        _shared.ForgetToken();
+        HasGitHubToken = false;
+    }
+
+    [RelayCommand]
+    private async Task MakeSharedAsync()
+    {
+        IsSharing = true;
+        try
+        {
+            SharedLink = await _shared.PublishAsync(_inst, InviteServer, CancellationToken.None);
+            CopyInvite(SharedLink);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or System.Net.Http.HttpRequestException or TaskCanceledException or IOException)
+        {
+            _toasts.Show(L.T("Не удалось сделать общей: ") + ex.Message, ToastKind.Error, 7);
+        }
+        finally
+        {
+            IsSharing = false;
         }
     }
 

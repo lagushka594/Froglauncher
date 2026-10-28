@@ -55,6 +55,51 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
             JoinSecret: FriendLinkService.JoinSecret(inst, host)));
     }
     private readonly PreflightService _preflight;
+    private readonly SharedPackService _shared;
+    private bool _synced;
+
+    /// <summary>Открыли ссылку ribbix://pack — вступить в общую сборку друга.</summary>
+    public async Task JoinSharedPackAsync(string gist)
+    {
+        if (IsBusy || IsRunning) { _toasts.Show(L.T("Игра уже запущена или загружается"), ToastKind.Info); return; }
+        if (MessageBox.Show(L.T("Вступить в общую сборку друга? Лаунчер поставит её и будет сам подтягивать изменения, когда друг меняет моды."),
+                "Ribbix Launcher", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        IsBusy = true;
+        try
+        {
+            var inst = await _shared.JoinAsync(gist, _settings.Current.DefaultRamMb, new Progress<DownloadProgress>(Progress.Apply), CancellationToken.None);
+            await LoadAsync();
+            SelectedInstance = Instances.FirstOrDefault(i => i.Id == inst.Id) ?? SelectedInstance;
+            _toasts.Show(L.T($"Общая сборка «{inst.Name}» готова 🐸 Изменения друга будут приходить сами"), ToastKind.Success, 7);
+        }
+        catch (InstanceLimitException ex) { _toasts.Show(ex.Message, ToastKind.Warning, 7); }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or InvalidOperationException or System.IO.IOException or TaskCanceledException)
+        {
+            _toasts.Show(L.T("Не удалось поставить общую сборку: ") + ex.Message, ToastKind.Error, 7);
+        }
+        finally
+        {
+            IsBusy = false;
+            Progress.Reset();
+        }
+    }
+
+    /// <summary>Раз за запуск лаунчера: общие сборки друзей подтягивают изменения.</summary>
+    private async Task SyncSharedPacksAsync()
+    {
+        foreach (var inst in Instances.Where(i => SharedPackService.IsGistId(i.SharedGist)).ToList())
+        {
+            try
+            {
+                if (await _shared.SyncAsync(inst, null, CancellationToken.None))
+                    _toasts.Show(L.T($"🔄 Общая сборка «{inst.Name}» обновилась — друг поменял моды"), ToastKind.Info, 6);
+            }
+            catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or InvalidOperationException or System.IO.IOException or TaskCanceledException)
+            {
+                _log.LogWarning(ex, "Общая сборка {Instance} не обновлена", inst.Id);
+            }
+        }
+    }
     public QuestsViewModel Quests { get; }
     private bool _skipPreflight;
 
@@ -190,8 +235,9 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         EntitlementService entitlements, DownloadService downloads, SettingsService settings,
         DiscordPresenceService presence, ToastService toasts, PlayStatsService stats, TrayService tray, WorldService worlds,
         CrashDoctorViewModel doctor, ModToolsService modTools, ModBisectService bisect, FriendLinkService friends, SkinService skins,
-        PreflightService preflight, QuestsViewModel quests, ILogger<HomeViewModel> log)
+        PreflightService preflight, QuestsViewModel quests, SharedPackService shared, ILogger<HomeViewModel> log)
     {
+        _shared = shared;
         Quests = quests;
         _preflight = preflight;
         doctor.LaunchAnywayRequested += () =>
@@ -239,6 +285,11 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     {
         Instances.ReplaceWith(_instances.List());
         Quests.Refresh();
+        if (!_synced)
+        {
+            _synced = true;
+            _ = SyncSharedPacksAsync();
+        }
         if (!_recovered)
         {
             // Лаунчер закрыли посреди поиска виновника — вернуть моды.
@@ -342,6 +393,8 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         {
             // Оффлайн-скин — ресурспаком «Ribbix Skin» (для Microsoft скин уже в профиле Minecraft).
             _skins.PrepareLaunch(inst, account);
+            // Хост общей сборки: моды поменялись — обновить gist, друзья подтянут сами.
+            _ = _shared.PublishIfChangedAsync(inst, CancellationToken.None);
             var session = await _launcher.LaunchAsync(inst, account,
                 _entitlements.IsAllowed(EntitlementKeys.JvmAutotune), progress, _cts.Token, server);
             _instances.Save(inst);

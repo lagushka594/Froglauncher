@@ -42,6 +42,13 @@ public sealed class Instance
     /// <summary>Ключ приглашения «Играть с другом»: повторная ссылка на тот же набор открывает эту версию.</summary>
     public string? ShareKey { get; set; }
 
+    /// <summary>Общая сборка (у друга): gist хоста и файлы, которые пришли из неё (относительно .minecraft).</summary>
+    public string? SharedGist { get; set; }
+    public List<string> SharedFiles { get; set; } = new();
+    /// <summary>Общая сборка (у хоста): свой gist и ключ последней опубликованной версии.</summary>
+    public string? HostGist { get; set; }
+    public string? HostShareKey { get; set; }
+
     /// <summary>Иконка (для версий, созданных из сборки Modrinth).</summary>
     public string? IconUrl { get; set; }
 

@@ -206,6 +206,31 @@
                             <TextBlock Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
                                        Text="{l:T 'Когда вы играете на сервере, в вашем статусе Discord появляется кнопка «Присоединиться» — друг с Ribbix зайдёт к вам в один клик.'}" />
                             <TextBlock Text="{Binding InviteNote}" Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,6,0,0" />
+                            <!-- Общая сборка: у друзей обновляется сама. -->
+                            <Border Height="1" Background="{DynamicResource LineBrush}" Margin="0,12,0,10" />
+                            <TextBlock Text="{l:T '🔄 Общая сборка для компании'}" FontWeight="SemiBold" />
+                            <TextBlock Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,2,0,6"
+                                       Text="{l:T 'Меняете моды — у друзей сборка обновляется сама. Список модов хранится в вашем закрытом GitHub Gist; друзьям аккаунт не нужен.'}" />
+                            <StackPanel Visibility="{Binding HasGitHubToken, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:T 'Сохранить'}" Margin="8,0,0,0"
+                                            Command="{Binding SaveGitHubTokenCommand}" CommandParameter="{Binding ElementName=TokenBox}" />
+                                    <PasswordBox x:Name="TokenBox" AutomationProperties.Name="Токен GitHub" />
+                                </DockPanel>
+                                <Button Style="{StaticResource LinkButton}" Content="{l:T 'Как получить токен (право только «gist») →'}" Command="{Binding OpenTokenPageCommand}" Margin="0,4,0,0" HorizontalAlignment="Left" />
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding HasGitHubToken, Converter={StaticResource VisibleIf}}">
+                                <WrapPanel>
+                                    <Button Style="{StaticResource AccentButton}" Content="{l:T '🔗 Сделать общей'}" Command="{Binding MakeSharedCommand}" Margin="0,0,8,0"
+                                            IsEnabled="{Binding IsSharing, Converter={StaticResource Not}}" />
+                                    <Button Style="{StaticResource GhostButton}" Content="{l:T 'Забыть токен'}" Command="{Binding ForgetGitHubTokenCommand}" />
+                                </WrapPanel>
+                                <DockPanel Margin="0,8,0,0" Visibility="{Binding SharedLink, Converter={StaticResource VisibleIf}}">
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T 'Копировать'}" Margin="8,0,0,0"
+                                            Command="{Binding CopyInviteCommand}" CommandParameter="{Binding SharedLink}" />
+                                    <TextBox Text="{Binding SharedLink, Mode=OneWay}" IsReadOnly="True" AutomationProperties.Name="Ссылка на общую сборку" />
+                                </DockPanel>
+                            </StackPanel>
                             <TextBlock Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,4,0,0"
                                        Text="{l:T 'Ссылку ribbix:// друг вставляет в адресную строку браузера (Discord такие ссылки не делает кликабельными). У друга должен стоять Ribbix.'}" />
                         </StackPanel>

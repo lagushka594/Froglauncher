@@ -15,7 +15,10 @@ static class Program
         foreach (var dict in new[] { "Themes/Theme.xaml", "Themes/Pixel.xaml" })
             app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri($"pack://application:,,,/RibbixLauncher;component/{dict}") });
         int w = a.Length > 2 ? int.Parse(a[2]) : 1180, h = a.Length > 3 ? int.Parse(a[3]) : 740;
-        var root = (FrameworkElement)XamlReader.Parse(File.ReadAllText(a[0]));
+        // type:RibbixLauncher.Views.ProfileView — создать готовое представление (проверка ресурсов без запуска лаунчера).
+        var root = a[0].StartsWith("type:")
+            ? (FrameworkElement)Activator.CreateInstance(typeof(RibbixLauncher.Views.PixelBorder).Assembly.GetType(a[0][5..], true)!)!
+            : (FrameworkElement)XamlReader.Parse(File.ReadAllText(a[0]));
         root.Width = w;
         root.Height = h;
         root.Measure(new Size(w, h));

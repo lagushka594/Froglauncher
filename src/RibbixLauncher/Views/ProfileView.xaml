@@ -6,6 +6,7 @@
              Style="{StaticResource Page}">
     <UserControl.Resources>
         <v:VisibleIfConverter x:Key="VisibleIf" />
+        <v:NotConverter x:Key="Not" />
     </UserControl.Resources>
     <TabControl Style="{StaticResource SettingsTabs}" SelectedIndex="{Binding Tab}">
     <TabItem Header="{l:T '👤 Аккаунты'}">
@@ -435,6 +436,63 @@
                 </WrapPanel>
                 <TextBlock Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,10,0,0"
                            Text="{l:T 'Карточки 1080×1920 сохраняются в «Изображения → Ribbix → Мой год». Кликните по карточке, чтобы листать.'}" />
+            </StackPanel>
+        </Grid>
+    </TabItem>
+    <!-- ================= Клипы ================= -->
+    <TabItem Header="{l:T '🎬 Клипы'}">
+        <Grid DataContext="{Binding Clips}" Margin="0,4,8,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="1.2*" />
+            </Grid.ColumnDefinitions>
+            <DockPanel Margin="0,0,14,0">
+                <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                    <Button Style="{StaticResource GhostButton}" Content="{l:T '🔄 Обновить'}" Command="{Binding RefreshCommand}" Margin="0,0,8,6" />
+                    <Button Style="{StaticResource GhostButton}" Content="{l:T 'Выбрать файл…'}" Command="{Binding PickFileCommand}" Margin="0,0,8,6" />
+                    <Button Style="{StaticResource GhostButton}" Content="{l:T '📂 Записи'}" Command="{Binding OpenCapturesCommand}" Margin="0,0,8,6" />
+                </WrapPanel>
+                <TextBlock DockPanel.Dock="Top" Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,10,0,0"
+                           Visibility="{Binding IsEmpty, Converter={StaticResource VisibleIf}}"
+                           Text="{l:T 'Записей Game Bar пока нет. Включите запись в фоне и в игре нажмите Win+Alt+G — последние 30 секунд появятся здесь.'}" />
+                <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}" Background="Transparent" BorderThickness="0"
+                         Visibility="{Binding IsEmpty, Converter={StaticResource VisibleIf}, ConverterParameter=invert}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="4,3">
+                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Caption}" Style="{StaticResource Muted}" FontSize="11" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+            <StackPanel Grid.Column="1">
+                <TextBlock Text="{l:T 'Клип для TikTok'}" Style="{StaticResource H1}" />
+                <TextBlock Style="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0"
+                           Text="{l:T 'Последние 30 секунд записи превращаются в вертикальное видео 1080×1920 с размытым фоном и логотипом — готово для TikTok, Reels и Shorts.'}" />
+                <v:PixelBorder Style="{StaticResource Card}" Margin="0,14,0,0" Padding="14,12">
+                    <StackPanel>
+                        <TextBlock Text="{l:T 'Как записать момент'}" FontWeight="SemiBold" />
+                        <TextBlock Style="{StaticResource Muted}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"
+                                   Text="{l:T '1. Включите «Записывать в фоновом режиме» в настройках Windows → Игры → Клипы.&#x0a;2. В игре случилось что-то крутое — нажмите Win+Alt+G.&#x0a;3. Вернитесь сюда, выберите запись и нажмите «Сделать клип».'}" />
+                        <Button Style="{StaticResource LinkButton}" Content="{l:T 'Открыть настройки клипов Windows →'}" Command="{Binding OpenGameBarSettingsCommand}"
+                                HorizontalAlignment="Left" Margin="0,6,0,0" />
+                    </StackPanel>
+                </v:PixelBorder>
+                <WrapPanel Margin="0,16,0,0">
+                    <Button Style="{StaticResource AccentButton}" Content="{l:T '🎬 Сделать клип'}" Command="{Binding MakeCommand}" Margin="0,0,8,8"
+                            IsEnabled="{Binding IsWorking, Converter={StaticResource Not}}" />
+                    <Button Style="{StaticResource GhostButton}" Content="{l:T '🎵 В TikTok'}" Command="{Binding OpenTikTokCommand}" Margin="0,0,8,8"
+                            Visibility="{Binding LastClip, Converter={StaticResource VisibleIf}}" />
+                </WrapPanel>
+                <StackPanel Visibility="{Binding IsWorking, Converter={StaticResource VisibleIf}}" Margin="0,4,0,0">
+                    <TextBlock Text="{Binding Status}" Style="{StaticResource Muted}" FontSize="12" />
+                    <ProgressBar Value="{Binding Percent, Mode=OneWay}" Maximum="100" Height="8" Margin="0,4,0,0" />
+                </StackPanel>
+                <TextBlock Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"
+                           Visibility="{Binding HasFfmpeg, Converter={StaticResource VisibleIf}, ConverterParameter=invert}"
+                           Text="{l:T 'Для первого клипа лаунчер один раз скачает ffmpeg (~150 МБ).'}" />
             </StackPanel>
         </Grid>
     </TabItem>

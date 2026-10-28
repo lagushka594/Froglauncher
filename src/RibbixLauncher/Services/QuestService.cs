@@ -48,6 +48,7 @@ public sealed class QuestService(PlayStatsService stats, InstanceService instanc
         new QuestDef("fps", "fps", 1, 70, L.T("Замерь FPS в настройках версии"), "📈"),
         new QuestDef("map", "map", 1, 40, L.T("Открой карту мира"), "🗺"),
         new QuestDef("sessions", "sessions", 3, 80, L.T("Запусти игру 3 раза"), "▶"),
+        new QuestDef("clip", "clip", 1, 80, L.T("Сделай клип для TikTok"), "🎬"),
     };
 
     /// <summary>Уровень заданий — для тем, которые открываются за уровни (ThemeService).</summary>
