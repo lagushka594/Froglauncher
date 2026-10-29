@@ -65,6 +65,8 @@ public partial class MainWindow : Window
     {
         base.OnActivated(e);
         if (Keyboard.FocusedElement is null) Keyboard.Focus(this);
+        // После диалогов окно активируется снова — откладываем, чтобы не открыть приглашение поверх окна сообщения.
+        Dispatcher.BeginInvoke(() => (DataContext as MainViewModel)?.CheckClipboardInvite(), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     }
 
     protected override void OnPreviewMouseDown(MouseButtonEventArgs e)

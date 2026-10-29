@@ -307,6 +307,15 @@ public partial class MainViewModel : ObservableObject, IRecipient<NavigateMessag
         if (home.StopCommand.CanExecute(null)) home.StopCommand.Execute(null);
     }
 
+    /// <summary>Друг скопировал приглашение ribbix://play или ribbix://pack и переключился в лаунчер — предложить открыть.</summary>
+    public void CheckClipboardInvite()
+    {
+        string? text;
+        try { text = Clipboard.ContainsText() ? Clipboard.GetText() : null; }
+        catch (System.Runtime.InteropServices.COMException) { return; }
+        if (InviteClipboard.Take(text) is { } uri) HandleDeepLink(uri);
+    }
+
     /// <summary>ribbix://billing/success?sub_id=... — возврат после оплаты.</summary>
     public void HandleDeepLink(Uri uri)
     {

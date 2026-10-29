@@ -87,6 +87,26 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        <TextBlock Text="{l:T '🏆 Задания недели'}" FontWeight="SemiBold" FontSize="13" Margin="0,8,0,2" />
+                        <ItemsControl ItemsSource="{Binding WeeklyRows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock x:Name="R" DockPanel.Dock="Right" Text="{Binding Reward}" Foreground="{DynamicResource AccentBrush}" FontSize="12"
+                                                   FontFamily="{StaticResource PixelFont}" TextOptions.TextRenderingMode="Aliased" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding ProgressText}" Style="{StaticResource Muted}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0" />
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Emoji}" Width="22" VerticalAlignment="Center" />
+                                        <TextBlock x:Name="T" Text="{Binding Title}" FontSize="12" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Done}" Value="True">
+                                            <Setter TargetName="T" Property="TextDecorations" Value="Strikethrough" />
+                                            <Setter TargetName="R" Property="Text" Value="✓" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <TextBlock Text="{Binding NextReward}" Style="{StaticResource Muted}" FontSize="12" Margin="0,6,0,0" />
                     </StackPanel>
                 </v:PixelBorder>
@@ -287,6 +307,10 @@
                     </StackPanel>
                     <TextBlock Text="{Binding LastLogLine}" Style="{StaticResource Muted}" FontFamily="Consolas" FontSize="11" Margin="0,6,0,0"
                                TextTrimming="CharacterEllipsis" />
+                    <Button Style="{StaticResource GhostButton}" Content="{l:T '📨 Скопировать приглашение в мир'}" Command="{Binding CopyWorldInviteCommand}"
+                            HorizontalAlignment="Left" Margin="0,8,0,0"
+                            ToolTip="{l:T 'Друг копирует ссылку и открывает Ribbix: у него сама поставится эта сборка, и игра зайдёт в ваш мир'}"
+                            Visibility="{Binding WorldInvite, Converter={StaticResource VisibleIf}}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">

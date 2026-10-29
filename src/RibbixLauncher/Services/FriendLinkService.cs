@@ -29,6 +29,35 @@ public sealed record FriendInvite(string Name, string GameVersion, LoaderType Lo
 public sealed record FriendLink(string Url, string? WebUrl, int Included, IReadOnlyList<string> NotOnModrinth);
 
 /// <summary>
+/// Приглашения через буфер обмена. Discord не делает ribbix:// кликабельным, поэтому друг просто копирует ссылку —
+/// лаунчер при переключении в него сам предложит её открыть. Свои скопированные ссылки не предлагаем.
+/// </summary>
+public static class InviteClipboard
+{
+    private static readonly HashSet<string> Seen = new();
+
+    /// <summary>Скопировать свою ссылку (её же лаунчер потом не предложит открыть). false — буфер занят.</summary>
+    public static bool Copy(string text)
+    {
+        try { System.Windows.Clipboard.SetText(text); }
+        catch (System.Runtime.InteropServices.COMException) { return false; }
+        Seen.Add(text.Trim());
+        return true;
+    }
+
+    /// <summary>Ссылка-приглашение ribbix://play или ribbix://pack, которую ещё не предлагали. Каждую — один раз.</summary>
+    public static Uri? Take(string? text)
+    {
+        text = text?.Trim();
+        if (string.IsNullOrEmpty(text) || text.Length > 8000 || Seen.Contains(text)) return null;
+        if (!text.StartsWith("ribbix://play?", StringComparison.OrdinalIgnoreCase) &&
+            !text.StartsWith("ribbix://pack?", StringComparison.OrdinalIgnoreCase)) return null;
+        Seen.Add(text);
+        return Uri.TryCreate(text, UriKind.Absolute, out var uri) ? uri : null;
+    }
+}
+
+/// <summary>
 /// «Играть с другом» по одной ссылке: ribbix://play?… — у друга сам ставится тот же Minecraft, загрузчик
 /// и моды (только файлы Modrinth: ссылка несёт ID версий, скачивание — с cdn.modrinth.com с проверкой SHA1),
 /// и игра сразу подключается к серверу. Discord не делает ribbix:// кликабельным, поэтому есть и

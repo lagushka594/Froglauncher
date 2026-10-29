@@ -21,6 +21,14 @@ public sealed class QuestState
     public int Xp { get; set; }
     /// <summary>События дня (надел скин, ускорил версию, замерил FPS…): вид → сколько раз сегодня.</summary>
     public Dictionary<string, int> Marks { get; set; } = new();
+
+    /// <summary>Неделя (ISO, «2026-W44») и выполненные недельные задания.</summary>
+    public string Week { get; set; } = "";
+    public List<string> WeekClaimed { get; set; } = new();
+    /// <summary>Заданий дня выполнено за эту неделю.</summary>
+    public int WeekDaily { get; set; }
+    /// <summary>События за всё время (для достижений): вид → сколько раз; «quests» — выполнено заданий.</summary>
+    public Dictionary<string, int> Lifetime { get; set; } = new();
 }
 
 /// <summary>
@@ -50,6 +58,25 @@ public sealed class QuestService(PlayStatsService stats, InstanceService instanc
         new QuestDef("sessions", "sessions", 3, 80, L.T("Запусти игру 3 раза"), "▶"),
         new QuestDef("clip", "clip", 1, 80, L.T("Сделай клип для TikTok"), "🎬"),
     };
+
+    /// <summary>Задания недели (пропуск сезона): одни и те же каждую неделю, опыта — как за несколько дней.</summary>
+    public static readonly IReadOnlyList<QuestDef> WeekPool = new[]
+    {
+        new QuestDef("w-play", "wplay", 300, 250, L.T("Сыграй 5 часов за неделю"), "🏆"),
+        new QuestDef("w-days", "wdays", 4, 250, L.T("Поиграй в 4 разных дня"), "📅"),
+        new QuestDef("w-daily", "wdaily", 8, 300, L.T("Выполни 8 заданий дня"), "📜"),
+    };
+
+    /// <summary>Награды пропуска: уровень → тема (ThemeService, Requires = quest:N).</summary>
+    public static readonly IReadOnlyList<(int Level, string Theme)> Rewards = new[]
+    {
+        (5, L.T("Неоновое болото")), (10, L.T("Король пруда")), (15, L.T("Звёздный пруд")), (20, L.T("Лавовая лягушка")),
+    };
+
+    internal static string WeekKey(DateOnly day) =>
+        $"{System.Globalization.ISOWeek.GetYear(day.ToDateTime(TimeOnly.MinValue))}-W{System.Globalization.ISOWeek.GetWeekOfYear(day.ToDateTime(TimeOnly.MinValue)):00}";
+
+    internal static DateOnly WeekStart(DateOnly day) => day.AddDays(-(((int)day.DayOfWeek + 6) % 7));
 
     /// <summary>Уровень заданий — для тем, которые открываются за уровни (ThemeService).</summary>
     public int Level => Load().Xp / XpPerLevel + 1;
@@ -85,11 +112,19 @@ public sealed class QuestService(PlayStatsService stats, InstanceService instanc
     {
         var s = Fresh(Load());
         s.Marks[kind] = s.Marks.GetValueOrDefault(kind) + 1;
+        s.Lifetime[kind] = s.Lifetime.GetValueOrDefault(kind) + 1;
         Save(s);
     }
 
     private static QuestState Fresh(QuestState s)
     {
+        var week = WeekKey(DateOnly.FromDateTime(AppClock.Now));
+        if (s.Week != week)
+        {
+            s.Week = week;
+            s.WeekClaimed.Clear();
+            s.WeekDaily = 0;
+        }
         if (s.Day == Today) return s;
         s.Day = Today;
         s.Claimed.Clear();
@@ -98,7 +133,7 @@ public sealed class QuestService(PlayStatsService stats, InstanceService instanc
     }
 
     /// <summary>Прогресс заданий дня; выполненные сразу начисляют опыт (один раз). Возвращает и только что выполненные.</summary>
-    public (IReadOnlyList<QuestProgress> Quests, IReadOnlyList<QuestDef> JustDone, int Xp) Refresh()
+    public (IReadOnlyList<QuestProgress> Quests, IReadOnlyList<QuestProgress> Weekly, IReadOnlyList<QuestDef> JustDone, int Xp) Refresh()
     {
         var s = Fresh(Load());
         var today = DateOnly.FromDateTime(AppClock.Now);
@@ -123,12 +158,37 @@ public sealed class QuestService(PlayStatsService stats, InstanceService instanc
             {
                 s.Claimed.Add(q.Id);
                 s.Xp += q.Xp;
+                s.WeekDaily++;
+                s.Lifetime["quests"] = s.Lifetime.GetValueOrDefault("quests") + 1;
                 justDone.Add(q);
             }
             list.Add(new QuestProgress(q, v, done));
         }
+
+        var start = WeekStart(today);
+        var week = stats.Load().Sessions.Where(x => DateOnly.FromDateTime(x.Start.LocalDateTime) >= start).ToList();
+        int WeekValue(QuestDef q) => q.Kind switch
+        {
+            "wplay" => (int)week.Sum(x => x.Duration.TotalMinutes),
+            "wdays" => week.Select(x => DateOnly.FromDateTime(x.Start.LocalDateTime)).Distinct().Count(),
+            _ => s.WeekDaily,
+        };
+        var weekly = new List<QuestProgress>();
+        foreach (var q in WeekPool)
+        {
+            var v = Math.Min(q.Goal, WeekValue(q));
+            var done = v >= q.Goal;
+            if (done && !s.WeekClaimed.Contains(q.Id))
+            {
+                s.WeekClaimed.Add(q.Id);
+                s.Xp += q.Xp;
+                s.Lifetime["quests"] = s.Lifetime.GetValueOrDefault("quests") + 1;
+                justDone.Add(q);
+            }
+            weekly.Add(new QuestProgress(q, v, done));
+        }
         Save(s);
-        return (list, justDone, s.Xp);
+        return (list, weekly, justDone, s.Xp);
     }
 
     /// <summary>Файлы модов, ресурспаков и шейдеров, появившиеся сегодня (поставлены из каталога или вручную).</summary>

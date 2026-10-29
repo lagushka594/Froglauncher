@@ -160,7 +160,9 @@ public partial class App : Application
         s.AddSingleton<SkinService>();
         s.AddSingleton<OptimizeService>();
         s.AddSingleton<QuestService>();
+        s.AddSingleton<AchievementService>();
         s.AddSingleton<SharedPackService>();
+        s.AddSingleton<LaunchEstimateService>();
         s.AddSingleton<QuestsViewModel>();
         s.AddSingleton<PreflightService>();
         s.AddSingleton<SettingsViewModel>();

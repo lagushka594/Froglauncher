@@ -232,8 +232,7 @@ public partial class InstanceSettingsViewModel : ObservableObject
     private void CopyInvite(string? text)
     {
         if (string.IsNullOrEmpty(text)) return;
-        try { System.Windows.Clipboard.SetText(text); }
-        catch (System.Runtime.InteropServices.COMException) { return; }
+        if (!InviteClipboard.Copy(text)) return;
         _toasts.Show(L.T("Ссылка скопирована — отправьте её другу 👫"), ToastKind.Success);
     }
 

@@ -134,6 +134,25 @@ public sealed class VersionService(IHttpClientFactory httpFactory, DownloadServi
         return v;
     }
 
+    /// <summary>Сколько байт ещё не скачано для ванильной версии: client.jar, библиотеки и ассеты (индекс ассетов качается).</summary>
+    public async Task<long> MissingBytesAsync(string id, CancellationToken ct)
+    {
+        var v = await EnsureVanillaJsonAsync(id, ct);
+        var items = LibraryDownloads(v).ToList();
+        if (v.Downloads?.GetValueOrDefault("client") is { Url: not null } client)
+            items.Add(new DownloadItem(client.Url, LauncherPaths.VersionJar(v.Jar ?? v.Id), client.Sha1, client.Size));
+        var bytes = items.DistinctBy(i => i.Path).Where(i => !File.Exists(i.Path)).Sum(i => i.Size);
+        if (v.AssetIndex is { } ai)
+        {
+            var indexPath = Path.Combine(LauncherPaths.Assets, "indexes", ai.Id + ".json");
+            if (!File.Exists(indexPath)) await downloads.DownloadFileAsync(new DownloadItem(ai.Url, indexPath, ai.Sha1, ai.Size), ct);
+            var index = JsonSerializer.Deserialize<AssetIndexFile>(await File.ReadAllTextAsync(indexPath, ct), Json.Mojang)!;
+            bytes += index.Objects.Values.DistinctBy(o => o.Hash)
+                .Where(o => !File.Exists(Path.Combine(LauncherPaths.Assets, "objects", o.Hash[..2], o.Hash))).Sum(o => o.Size);
+        }
+        return bytes;
+    }
+
     public static string LoggingConfigPath(DownloadInfo file) =>
         Path.Combine(LauncherPaths.Assets, "log_configs", file.Id ?? Path.GetFileName(file.Url!));
 

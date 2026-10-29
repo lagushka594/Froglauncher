@@ -254,6 +254,7 @@ public partial class ModpacksViewModel(
         {
             if (type == "mod")
             {
+                if (!await ModConflictPrompt.ConfirmAsync(modrinth, inst, item.Hit.ProjectId, item.Hit.Title, log)) return;
                 var added = await modrinth.InstallAsync(inst, item.Hit.ProjectId, CancellationToken.None);
                 instances.Save(inst);
                 var deps = added.Count(a => a.IsDependency);

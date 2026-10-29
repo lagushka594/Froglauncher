@@ -25,8 +25,16 @@ public sealed record AdvancementItem(string Title, string Description, string Fr
 public sealed record AdvancementCategory(string Key, string Title);
 
 /// <summary>«Профиль» → «Статистика»: часы, сессии, серия дней, бейдж, график по дням, счётчики Minecraft, достижения.</summary>
-public partial class StatsViewModel(PlayStatsService stats, InstanceService instances, AdvancementService advancements) : ObservableObject
+public sealed record AchievementTile(string Emoji, string Title, string Description, bool Unlocked)
 {
+    public string Tooltip => Unlocked ? Description : L.T("🔒 ") + Description;
+}
+
+public partial class StatsViewModel(PlayStatsService stats, InstanceService instances, AdvancementService advancements, AchievementService achievements) : ObservableObject
+{
+    public ObservableCollection<AchievementTile> Achievements { get; } = new();
+    [ObservableProperty] private string _achievementsText = "";
+
     public const int ChartDays = 14;
     public const double ChartHeight = 130;
 
@@ -55,6 +63,11 @@ public partial class StatsViewModel(PlayStatsService stats, InstanceService inst
 
     public void Load()
     {
+        achievements.Check();
+        var list = achievements.List();
+        Achievements.ReplaceWith(list.OrderByDescending(a => a.Unlocked is not null)
+            .Select(a => new AchievementTile(a.Def.Emoji, a.Def.Title, a.Def.Description, a.Unlocked is not null)));
+        AchievementsText = L.T($"{list.Count(a => a.Unlocked is not null)} из {list.Count}");
         var log = stats.Load();
         var sessions = log.Sessions;
         var mc = stats.ReadMinecraftStats();

@@ -41,21 +41,45 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     private static partial System.Text.RegularExpressions.Regex E4mcRegex();
 
     /// <summary>
-    /// «Открыть мир друзьям»: мод e4mc выдал публичный адрес открытого для сети мира — копируем его, показываем
-    /// и включаем «Присоединиться» в Discord, чтобы друзья зашли в один клик.
+    /// «Открыть мир друзьям»: мод e4mc выдал публичный адрес открытого для сети мира. Копируем приглашение
+    /// «в один клик» — та же версия, моды и этот адрес (у друга всё поставится само и игра зайдёт в мир),
+    /// и включаем «Присоединиться» в Discord. Modrinth недоступен — копируем просто адрес.
     /// </summary>
-    private void OnWorldOpened(string host)
+    private async void OnWorldOpened(string host)
     {
         if (host == _openedHost || _launcher.Current?.Instance is not { } inst) return;
         _openedHost = host;
-        try { Clipboard.SetText(host); } catch (System.Runtime.InteropServices.COMException) { }
-        _toasts.Show(L.T($"🌍 Мир открыт для друзей: {host} — адрес скопирован. Друзья: «Сетевая игра» → «Прямое подключение»."), ToastKind.Success, 12);
+        QuestService.MarkGlobal("host");
         _ = _presence.SetAsync(new PresenceState(L.T($"Играет в Minecraft {inst.GameVersion}"), L.T("Открыл мир для друзей 🌍"),
             _launcher.Current.StartedAt, SmallImage: "playing", SmallText: _accounts.Selected?.Name ?? "",
             JoinSecret: FriendLinkService.JoinSecret(inst, host)));
+        try
+        {
+            var link = await _friends.CreateAsync(inst, host, CancellationToken.None);
+            WorldInvite = link.WebUrl ?? link.Url;
+            InviteClipboard.Copy(WorldInvite);
+            _toasts.Show(L.T($"🌍 Мир открыт! Приглашение скопировано — отправьте его другу. Пусть скопирует ссылку и откроет Ribbix: поставится та же сборка и игра сама зайдёт к вам.\nАдрес для обычного входа: {host}"), ToastKind.Success, 14);
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.IO.IOException or System.Text.Json.JsonException)
+        {
+            _log.LogWarning(ex, "Приглашение в мир");
+            InviteClipboard.Copy(host);
+            _toasts.Show(L.T($"🌍 Мир открыт для друзей: {host} — адрес скопирован. Друзья: «Сетевая игра» → «Прямое подключение»."), ToastKind.Success, 12);
+        }
+    }
+
+    /// <summary>Приглашение в открытый сейчас мир (пока идёт игра).</summary>
+    [ObservableProperty] private string? _worldInvite;
+
+    [RelayCommand]
+    private void CopyWorldInvite()
+    {
+        if (WorldInvite is { } link && InviteClipboard.Copy(link))
+            _toasts.Show(L.T("Приглашение скопировано — отправьте его другу 👫"), ToastKind.Success);
     }
     private readonly PreflightService _preflight;
     private readonly SharedPackService _shared;
+    private readonly LaunchEstimateService _estimates;
     private bool _synced;
 
     /// <summary>Открыли ссылку ribbix://pack — вступить в общую сборку друга.</summary>
@@ -235,9 +259,10 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         EntitlementService entitlements, DownloadService downloads, SettingsService settings,
         DiscordPresenceService presence, ToastService toasts, PlayStatsService stats, TrayService tray, WorldService worlds,
         CrashDoctorViewModel doctor, ModToolsService modTools, ModBisectService bisect, FriendLinkService friends, SkinService skins,
-        PreflightService preflight, QuestsViewModel quests, SharedPackService shared, ILogger<HomeViewModel> log)
+        PreflightService preflight, QuestsViewModel quests, SharedPackService shared, LaunchEstimateService estimates, ILogger<HomeViewModel> log)
     {
         _shared = shared;
+        _estimates = estimates;
         Quests = quests;
         _preflight = preflight;
         doctor.LaunchAnywayRequested += () =>
@@ -382,9 +407,11 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
         _cts = new CancellationTokenSource();
         _downloads.Parallelism = _entitlements.IsAllowed(EntitlementKeys.PriorityDownload) ? 16 : 8;
 
+        var speed = 0.0;
         var progress = new Progress<DownloadProgress>(p =>
         {
             Progress.Apply(p);
+            if (p.TotalBytes >= 5 << 20 && p.BytesPerSecond > 0) speed = p.BytesPerSecond;
             _ = _presence.SetAsync(new PresenceState(L.T($"Готовит {inst.DisplayVersion}"),
                 p.TotalBytes > 0 ? $"{p.Stage}: {p.Percent:0}%" : p.Stage, SmallImage: "download", SmallText: L.T("Загрузка")));
         });
@@ -395,9 +422,11 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
             _skins.PrepareLaunch(inst, account);
             // Хост общей сборки: моды поменялись — обновить gist, друзья подтянут сами.
             _ = _shared.PublishIfChangedAsync(inst, CancellationToken.None);
+            if (!await ConfirmFirstDownloadAsync(inst, _cts.Token)) throw new OperationCanceledException();
             var session = await _launcher.LaunchAsync(inst, account,
                 _entitlements.IsAllowed(EntitlementKeys.JvmAutotune), progress, _cts.Token, server);
             _instances.Save(inst);
+            if (speed > 0) _estimates.RememberSpeed(speed);
             IsRunning = true;
             _stats.SessionStarted(inst, server);
             _tray.SetGameRunning(true);
@@ -433,6 +462,31 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     }
 
     private bool CanStop => IsBusy || IsRunning;
+
+    /// <summary>
+    /// Первый запуск версии: показываем, сколько скачать и сколько ждать. Места на диске мало — спрашиваем,
+    /// начинать ли. Оценка не удалась (нет сети и т. п.) — просто запускаем, загрузка сама скажет об ошибке.
+    /// </summary>
+    private async Task<bool> ConfirmFirstDownloadAsync(Instance inst, CancellationToken ct)
+    {
+        LaunchEstimate e;
+        try
+        {
+            Progress.Apply(DownloadProgress.Indeterminate(L.T("Считаем, сколько скачать")));
+            e = await _estimates.EstimateAsync(inst, ct);
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.IO.IOException or InvalidOperationException
+                                       or System.Text.Json.JsonException)
+        {
+            _log.LogWarning(ex, "Оценка загрузки {Instance}", inst.Id);
+            return true;
+        }
+        if (!e.Worth) return true;
+        if (e.LowDisk && MessageBox.Show(LaunchEstimateService.LowDiskText(e), "Ribbix Launcher",
+                MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return false;
+        _toasts.Show(LaunchEstimateService.Describe(e), ToastKind.Info, 8);
+        return true;
+    }
 
     [RelayCommand(CanExecute = nameof(CanStop))]
     private void Stop()
@@ -505,6 +559,7 @@ public partial class HomeViewModel : ObservableObject, IPageActivated
     {
         if (s.IsDiagnostic) return; // поиск виновника / замер FPS — свои запуски
         IsRunning = false;
+        WorldInvite = null;
         Quests.Refresh();
         _reminder?.Stop();
         _reminder = null;

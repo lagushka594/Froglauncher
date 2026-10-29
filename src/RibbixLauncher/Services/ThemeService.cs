@@ -36,6 +36,8 @@ public sealed class ThemeService(EntitlementService entitlements, QuestService q
         // Только за задания дня — купить нельзя.
         new ThemeInfo("quest-neon", L.T("⚡ Неоновое болото"), "#A3E635", "#E879F9", "#0A0614", QuestPrefix + "5"),
         new ThemeInfo("quest-king", L.T("👑 Король пруда"), "#FBBF24", "#22D3EE", "#100C02", QuestPrefix + "10"),
+        new ThemeInfo("quest-stars", L.T("🌌 Звёздный пруд"), "#818CF8", "#F0ABFC", "#05061A", QuestPrefix + "15"),
+        new ThemeInfo("quest-lava", L.T("🔥 Лавовая лягушка"), "#F97316", "#FDE047", "#160603", QuestPrefix + "20"),
         // Сезонные — бесплатные: «Сезонная» сама переключается по дате, остальные можно выбрать вручную.
         new ThemeInfo(Seasons.AutoKey, L.T("🗓 Сезонная (авто)"), "#22C55E", "#F472B6", "#0B1220", null),
         new ThemeInfo("season-spring", L.T("🌸 Цветение"), "#4ADE80", "#F472B6", "#0F1412", null),

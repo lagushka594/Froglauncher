@@ -154,6 +154,14 @@
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '🌍 Мир друзьям'}" Margin="0,0,8,0"
                                 Command="{Binding DataContext.HostWorldCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                 ToolTip="{l:T 'Открыть свой мир друзьям через интернет: лаунчер поставит мод e4mc, и мир получит адрес без проброса портов'}" />
+                        <Button Style="{StaticResource GhostButton}" Content="{l:T '🎙 Голос'}" Margin="0,0,8,0"
+                                Command="{Binding DataContext.VoiceChatCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                IsEnabled="{Binding DataContext.IsOptimizing, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource Not}}"
+                                ToolTip="{l:T 'Голосовой чат в игре: лаунчер поставит Simple Voice Chat'}" />
+                        <Button Style="{StaticResource GhostButton}" Content="{l:T '🎮 Геймпад'}" Margin="0,0,8,0"
+                                Command="{Binding DataContext.GamepadCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                IsEnabled="{Binding DataContext.IsOptimizing, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource Not}}"
+                                ToolTip="{l:T 'Играть с геймпада: лаунчер поставит Controlify'}" />
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '👫 С другом'}" Command="{Binding ToggleInviteCommand}" Margin="0,0,8,0"
                                 ToolTip="{l:T 'Ссылка, по которой у друга сам поставится тот же Minecraft с модами'}" />
                         <Button Style="{StaticResource GhostButton}" Content="{l:T '📤 Экспорт'}" Command="{Binding TogglePackExportCommand}" Margin="0,0,8,0"
@@ -640,6 +648,9 @@
                                 <DockPanel>
                                     <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="{l:T '🔍 Каталог модов'}"
                                             Command="{Binding DataContext.ToggleModCatalogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                    <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T '✨ Похожие'}" Margin="0,0,8,0"
+                                            ToolTip="{l:T 'Популярные моды тех же жанров, что уже стоят в этой версии'}"
+                                            Command="{Binding DataContext.SimilarModsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                     <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="{l:T '🎨 Ресурспаки и шейдеры'}" Margin="0,0,8,0"
                                             ToolTip="{l:T 'Каталог Modrinth: ресурспаки, шейдеры и датапаки для этой версии'}"
                                             Command="{Binding DataContext.OpenModrinthCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="resourcepack" />

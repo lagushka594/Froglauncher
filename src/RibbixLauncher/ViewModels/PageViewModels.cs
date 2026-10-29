@@ -12,6 +12,26 @@ using Microsoft.Extensions.Options;
 
 namespace RibbixLauncher.ViewModels;
 
+/// <summary>«⚠️ Несовместимо»: перед установкой мода спрашиваем, если он не уживается с уже стоящими.</summary>
+internal static class ModConflictPrompt
+{
+    /// <summary>true — ставить. Modrinth недоступен — не мешаем установке, она сама сообщит об ошибке.</summary>
+    public static async Task<bool> ConfirmAsync(ModrinthService modrinth, Instance inst, string projectId, string title, ILogger log)
+    {
+        IReadOnlyList<string> conflicts;
+        try { conflicts = await modrinth.ConflictsAsync(inst, projectId, CancellationToken.None); }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            log.LogWarning(ex, "Проверка совместимости {Project}", projectId);
+            return true;
+        }
+        if (conflicts.Count == 0) return true;
+        return MessageBox.Show(
+            L.T($"⚠️ «{title}» не уживается с модами этой версии: {string.Join(", ", conflicts.Take(6))}.\n\nВместе игра может не запуститься или упасть. Лучше выключить один из них во вкладке «Моды».\n\nВсё равно поставить?"),
+            "Ribbix Launcher", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
+    }
+}
+
 /// <summary>«Каталог»: версии игрока (инстансы), добавление (Minecraft + модлоадер), настройки.</summary>
 public partial class InstancesViewModel(
     InstanceService instances,
@@ -46,6 +66,77 @@ public partial class InstancesViewModel(
     [ObservableProperty] private bool _isOptimizing;
 
     /// <summary>«Открыть мир друзьям»: мод e4mc даёт открытому для сети миру публичный адрес — без проброса портов.</summary>
+    /// <summary>Мод «в один клик» (голосовой чат, геймпад): ставит, если его ещё нет, и показывает подсказку.</summary>
+    private async Task InstallFeatureModAsync(string slug, string fileStart, string title, string done, params LoaderType[] loaders)
+    {
+        if (Selected is not { } inst || IsOptimizing) return;
+        if (!loaders.Contains(inst.Loader))
+        {
+            toasts.Show(L.T($"{title} ставится на {string.Join(", ", loaders)} — создайте такую версию в «Каталоге»."), ToastKind.Info, 8);
+            return;
+        }
+        if (launcher.Current is { Process.HasExited: false } run && run.Instance.Id == inst.Id)
+        {
+            toasts.Show(L.T("Закройте игру перед обновлением модов"), ToastKind.Info);
+            return;
+        }
+        IsOptimizing = true;
+        try
+        {
+            var mods = System.IO.Path.Combine(inst.GameDirectory, "mods");
+            var has = inst.InstalledMods.Any(m => m.Title.Contains(title, StringComparison.OrdinalIgnoreCase)) ||
+                      System.IO.Directory.Exists(mods) && System.IO.Directory.EnumerateFiles(mods)
+                          .Any(f => System.IO.Path.GetFileName(f).StartsWith(fileStart, StringComparison.OrdinalIgnoreCase));
+            if (!has)
+            {
+                await modrinth.InstallAsync(inst, slug, CancellationToken.None);
+                instances.Save(inst);
+                RefreshModFiles();
+            }
+            System.Windows.MessageBox.Show(done, "Ribbix Launcher", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
+        catch (Exception ex) when (ex is ModsException or System.Net.Http.HttpRequestException or System.IO.IOException or TaskCanceledException)
+        {
+            toasts.Show(ex is ModsException ? ex.Message : L.T("Не удалось скачать мод: ") + ex.Message, ToastKind.Error, 7);
+        }
+        finally
+        {
+            IsOptimizing = false;
+        }
+    }
+
+    [RelayCommand]
+    private Task VoiceChatAsync() => InstallFeatureModAsync("simple-voice-chat", "voicechat", "Simple Voice Chat",
+        L.T("🎙 Голосовой чат готов!\n\nВ игре: V — настройки микрофона, Caps Lock — говорить (рация). Слышно тех, кто рядом.\n\nРаботает в мире по локальной сети и на серверах с этим модом. Через «Мир друзьям» (e4mc) голос не передаётся — e4mc пропускает только саму игру. У друзей должен стоять тот же мод."),
+        LoaderType.Fabric, LoaderType.Quilt, LoaderType.Forge, LoaderType.NeoForge);
+
+    [RelayCommand]
+    private Task GamepadAsync() => InstallFeatureModAsync("controlify", "controlify", "Controlify",
+        L.T("🎮 Геймпад готов!\n\nПодключите геймпад Xbox, PlayStation или Switch Pro до запуска игры — Controlify сам его найдёт и предложит настроить кнопки. Меню, инвентарь и крафт тоже работают с геймпада."),
+        LoaderType.Fabric, LoaderType.Quilt, LoaderType.NeoForge);
+
+    [RelayCommand]
+    private async Task SimilarModsAsync()
+    {
+        if (Selected is not { } inst) return;
+        ShowModCatalog = true;
+        IsSearchingMods = true;
+        try
+        {
+            var hits = await modrinth.SimilarAsync(inst, CancellationToken.None);
+            ModResults.ReplaceWith(hits.Select(h => new ModHitItem(h, false)));
+            toasts.Show(hits.Count == 0 ? L.T("Похожих модов под эту версию не нашлось") : L.T("✨ Подобрали моды под ваш вкус — они в каталоге ниже"), ToastKind.Info);
+        }
+        catch (Exception ex) when (ex is ModsException or System.Net.Http.HttpRequestException or TaskCanceledException)
+        {
+            toasts.Show(ex is ModsException ? ex.Message : L.T("Modrinth недоступен, попробуйте позже"), ToastKind.Error);
+        }
+        finally
+        {
+            IsSearchingMods = false;
+        }
+    }
+
     [RelayCommand]
     private async Task HostWorldAsync()
     {
@@ -65,7 +156,7 @@ public partial class InstancesViewModel(
                 instances.Save(inst);
                 RefreshModFiles();
             }
-            System.Windows.MessageBox.Show(L.T("Готово! Как открыть мир друзьям:\n\n1. Нажмите «Играть» и зайдите в свой мир.\n2. Esc → «Открыть для сети» → «Начать».\n3. Лаунчер скопирует адрес вида xxx.e4mc.link и покажет его — отправьте друзьям.\n4. Друзья: «Сетевая игра» → «Прямое подключение» → адрес. У них должна быть та же версия Minecraft (и моды, если они нужны миру).\n\nВ Discord у вас появится кнопка «Присоединиться»."),
+            System.Windows.MessageBox.Show(L.T("Готово! Как открыть мир друзьям:\n\n1. Нажмите «Играть» и зайдите в свой мир.\n2. Esc → «Открыть для сети» → «Начать».\n3. Лаунчер скопирует приглашение — отправьте его другу.\n4. Друг копирует ссылку и открывает Ribbix: у него сама поставится та же сборка, и игра зайдёт в ваш мир.\n\nБез Ribbix друзья заходят так: «Сетевая игра» → «Прямое подключение» → адрес вида xxx.e4mc.link (его тоже покажет лаунчер).\n\nВ Discord у вас появится кнопка «Присоединиться»."),
                 "Ribbix Launcher", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
         catch (Exception ex) when (ex is ModsException or System.Net.Http.HttpRequestException or System.IO.IOException)
@@ -94,6 +185,7 @@ public partial class InstancesViewModel(
             var r = await optimizer.RunAsync(inst, new Progress<string>(s => toasts.Show(s, ToastKind.Info, 2)), CancellationToken.None);
             RefreshModFiles();
             RefreshSnapshot();
+            QuestService.MarkGlobal("optimize");
             var text = r.Installed.Count > 0
                 ? L.T($"🚀 Ускорено! Поставлено: {string.Join(", ", r.Installed)}.")
                 : L.T("Все оптимизации уже стоят 🐸");
@@ -563,6 +655,7 @@ public partial class InstancesViewModel(
         item.IsInstalling = true;
         try
         {
+            if (!await ModConflictPrompt.ConfirmAsync(modrinth, inst, item.Hit.ProjectId, item.Hit.Title, log)) return;
             var added = await modrinth.InstallAsync(inst, item.Hit.ProjectId, CancellationToken.None);
             instances.Save(inst);
             item.IsInstalled = true;

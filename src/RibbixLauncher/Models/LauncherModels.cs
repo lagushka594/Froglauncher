@@ -127,6 +127,8 @@ public sealed class LauncherSettings
     public bool StartupSound { get; set; } = true;
     /// <summary>Один раз переключаем «Болото» по умолчанию на сезонную тему.</summary>
     public bool SeasonsIntroduced { get; set; }
+    /// <summary>Скорость последней большой загрузки (байт/с) — для оценки времени первого запуска.</summary>
+    public double DownloadSpeedBps { get; set; }
     /// <summary>Последний релиз Minecraft, о котором уже сообщили.</summary>
     public string? LastSeenMcRelease { get; set; }
 

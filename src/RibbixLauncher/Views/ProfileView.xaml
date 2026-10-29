@@ -346,6 +346,39 @@
                                    Visibility="{Binding AdvWorld, Converter={StaticResource VisibleIf}, ConverterParameter=invert}" />
                     </StackPanel>
                 </v:PixelBorder>
+
+                <!-- Достижения лаунчера. -->
+                <v:PixelBorder Style="{StaticResource Card}" Margin="0,12,0,0">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding AchievementsText}" Style="{StaticResource Muted}" VerticalAlignment="Center" />
+                            <TextBlock Text="{l:T '🏅 Достижения Ribbix'}" Style="{StaticResource H2}" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding Achievements}" Margin="0,8,0,0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <v:PixelBorder x:Name="Tile" Width="150" Margin="0,0,8,8" Padding="10,8" Opacity="0.4" ToolTip="{Binding Tooltip}"
+                                                   Background="#140A101E" BorderBrush="{DynamicResource LineBrush}" BorderThickness="1">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Emoji}" FontSize="24" />
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                                            <TextBlock Text="{Binding Description}" Style="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </v:PixelBorder>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                            <Setter TargetName="Tile" Property="Opacity" Value="1" />
+                                            <Setter TargetName="Tile" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </v:PixelBorder>
             </StackPanel>
         </ScrollViewer>
     </TabItem>
